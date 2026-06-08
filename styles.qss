@@ -135,7 +135,9 @@ QFrame.FanCard QProgressBar {
     background-color: #1a2035;
     border: none;
     border-radius: 2px;
-    height: 3px;
+    height: 4px;
+    min-height: 4px;
+    max-height: 4px;
 }
 
 QFrame.FanCard QProgressBar::chunk {

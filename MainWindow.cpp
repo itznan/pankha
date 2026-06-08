@@ -329,6 +329,7 @@ void MainWindow::setupUI()
 
     m_resetAutoExitCheck = new QCheckBox("Reset to Auto on exit", ctrlGroup);
     m_resetAutoExitCheck->setChecked(true);
+    m_resetAutoExitCheck->setEnabled(false); // enabled only when manual override is active
     ctrlLayout->addWidget(m_resetAutoExitCheck);
 
     // Advanced section (Collapsible)
@@ -436,8 +437,9 @@ void MainWindow::setConnectionStatus(const QString &status, const QString &color
 
 void MainWindow::onBackendStarted()
 {
-    // Backend successfully started, trigger initial scan
-    onRescanClicked();
+    // Delay the first scan briefly so the C# HTTP listener has time to start
+    // before we send the first request (process-start != server-ready).
+    QTimer::singleShot(500, this, &MainWindow::onRescanClicked);
 }
 
 void MainWindow::onBackendError(const QString &message)
@@ -527,6 +529,7 @@ void MainWindow::onScanResponse(const QJsonArray &fans)
         updateUIWithSelectedFan(true);
     } else {
         m_selectedFanId = "";
+        m_selectedControlId = "";
         showEmptyState("Select a fan from the list\nto monitor and configure controls.");
     }
 
@@ -583,10 +586,16 @@ void MainWindow::onApiError(const QString &message)
     m_consecutiveErrors++;
     qDebug() << "API Error (" << m_consecutiveErrors << "):" << message;
 
+    // Always unblock the scan state so the rescan button is never left
+    // permanently disabled after a failed initial scan.
+    if (m_isScanning) {
+        m_isScanning = false;
+        m_rescanButton->setEnabled(true);
+    }
+
     if (m_consecutiveErrors >= 3) {
         setConnectionStatus("Offline", "#EF4444");
-        m_statusLeftLabel->setText("Connection lost. Reconnecting...");
-        
+        m_statusLeftLabel->setText("Connection lost. Click \"Rescan\" to retry.");
         m_applyButton->setEnabled(false);
         m_resetAutoButton->setEnabled(false);
     }
@@ -705,15 +714,17 @@ void MainWindow::updateUIWithSelectedFan(bool fullRefresh)
         // Poll refresh: only update settings if the user is NOT actively editing or focused on them!
         if (hasControl) {
             m_manualOverrideCheck->setEnabled(true);
-            m_resetAutoButton->setEnabled(m_consecutiveErrors < 3);
 
             QString mode = selectedFan["Mode"].toString().toLower();
             bool isManual = (mode == "software");
 
-            // Only sync the checkbox from the backend when there is no pending
-            // local change (i.e. the user hasn't toggled the override manually
-            // without applying it yet).
+            // Only sync control states from the backend when there is no pending
+            // local change (i.e. no apply/reset request is currently in flight).
+            // This prevents the background poll from re-enabling buttons mid-request
+            // or overwriting checkbox state before the user has applied changes.
             if (!m_pendingManualChange) {
+                m_resetAutoButton->setEnabled(m_consecutiveErrors < 3);
+
                 m_manualOverrideCheck->blockSignals(true);
                 m_manualOverrideCheck->setChecked(isManual);
                 m_manualOverrideCheck->blockSignals(false);
@@ -829,7 +840,11 @@ void MainWindow::onApplyClicked()
         }
     }
 
-    // Connect temporary handler to capture success feedback
+    // Lock the button and mark a pending change so the background poll cannot
+    // re-enable it or overwrite the checkbox state before the response arrives.
+    m_pendingManualChange = true;
+    m_applyButton->setEnabled(false);
+
     disconnect(m_apiClient, &FanApiClient::controlApplied, nullptr, nullptr);
     connect(m_apiClient, &FanApiClient::controlApplied, this, &MainWindow::onControlApplied);
 
@@ -855,6 +870,10 @@ void MainWindow::onControlApplied(const QString &id, bool success)
 void MainWindow::onResetAutoClicked()
 {
     if (m_selectedControlId.isEmpty()) return;
+
+    // Lock buttons while the request is in flight.
+    m_pendingManualChange = true;
+    m_resetAutoButton->setEnabled(false);
 
     disconnect(m_apiClient, &FanApiClient::controlReset, nullptr, nullptr);
     connect(m_apiClient, &FanApiClient::controlReset, this, &MainWindow::onControlReset);
