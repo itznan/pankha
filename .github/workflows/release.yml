@@ -1,6 +1,5 @@
 name: Build and Release
 
-
 on:
   push:
     branches:
@@ -17,11 +16,11 @@ permissions:
 jobs:
   build:
     name: Build and Package
-    runs-on: windows-2025-vs2026
+    runs-on: windows-latest
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v5
@@ -121,7 +120,7 @@ jobs:
           }
 
       - name: Upload Installer Artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: pankha_installer
           path: installer/pankha_installer.exe
@@ -129,7 +128,7 @@ jobs:
 
       - name: Create Release and Upload Asset
         if: github.event_name == 'push'
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('v1.0.{0}', github.run_number) }}
           name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('Release v1.0.{0}', github.run_number) }}
