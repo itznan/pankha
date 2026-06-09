@@ -5,7 +5,7 @@
 <h1 align="center">Pankha</h1>
 
 <p align="center">
-  <strong>A premium, lightweight fan control application for Windows</strong>
+  A premium, lightweight fan control application for Windows
 </p>
 
 <p align="center">
@@ -26,22 +26,22 @@
 
 ---
 
-## ✨ Features
+## Features
 
 | Feature | Description |
 |---|---|
-| 🎨 **Premium UI** | macOS Sequoia-inspired Light & Dark themes with glassmorphism, smooth animations, and clean typography |
-| 🌀 **Manual Fan Control** | Override any CPU, GPU, or motherboard fan channel with a target speed from 0% – 100% |
-| 💾 **Persistent Speeds** | Manually set speeds remain active on hardware even after the app closes |
-| 🔽 **System Tray** | Minimize to tray for unobtrusive background operation. Double-click to restore |
-| 🚀 **Start on Boot** | Launch silently in the system tray when Windows starts |
-| 📊 **Live Monitoring** | Real-time RPM readings, duty cycle percentages, and configurable poll intervals |
-| 🏗️ **Native x64** | Both C++ and C# compile to native 64-bit binaries — no emulation layers |
-| 📦 **Single Installer** | One-click Inno Setup installer bundles everything |
+| **Premium UI** | macOS Sequoia-inspired Light & Dark themes with glassmorphism, smooth animations, and clean typography |
+| **Manual Fan Control** | Override any CPU, GPU, or motherboard fan channel with a target speed from 0% to 100% |
+| **Persistent Speeds** | Manually set speeds remain active on hardware even after the app closes |
+| **System Tray** | Minimize to tray for unobtrusive background operation. Double-click to restore |
+| **Start on Boot** | Launch silently in the system tray when Windows starts |
+| **Live Monitoring** | Real-time RPM readings, duty cycle percentages, and configurable poll intervals |
+| **Native x64** | Both C++ and C# compile to native 64-bit binaries — no emulation layers |
+| **Single Installer** | One-click Inno Setup installer bundles everything |
 
 ---
 
-## 🏛️ Architecture
+## Architecture
 
 ```
 ┌─────────────────────────────┐     HTTP (localhost:5555)     ┌──────────────────────────────┐
@@ -63,7 +63,7 @@
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 pankha/
@@ -84,14 +84,14 @@ pankha/
 │       ├── BackendLauncher.h/.cpp  # Backend process manager
 │       ├── main.cpp                # Application entry point
 │       ├── components/
-│       │   ├── FanCardWidget.h/.cpp      # Fan list card widget
-│       │   └── SmoothScrollFilter.h/.cpp # Inertial scroll filter
-│       ├── styles_dark.qss         # Dark theme stylesheet
-│       ├── styles_light.qss        # Light theme stylesheet
-│       ├── resources.qrc           # Qt resource configuration
-│       ├── resource.rc             # Windows resource compiler
-│       ├── icons/                  # SVG icons & .ico logo
-│       └── images/                 # PNG logo
+│       │   ├── FanCardWidget.h/.cpp
+│       │   └── SmoothScrollFilter.h/.cpp
+│       ├── styles_dark.qss
+│       ├── styles_light.qss
+│       ├── resources.qrc
+│       ├── resource.rc
+│       ├── icons/
+│       └── images/
 │
 ├── installer/
 │   └── setup.iss                   # Inno Setup 6 installer script
@@ -99,12 +99,12 @@ pankha/
 ├── .github/workflows/
 │   └── release.yml                 # CI/CD: build, package & release
 │
-└── CMakeLists.txt                  # CMake build configuration
+└── CMakeLists.txt
 ```
 
 ---
 
-## 🔧 Build Instructions
+## Build Instructions
 
 ### Prerequisites
 
@@ -158,13 +158,13 @@ C:\msys64\clang64\bin\windeployqt.exe --release --no-translations --compiler-run
 & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\setup.iss
 ```
 
-The installer is output to `installer/pankha_installer.exe`.
+Output: `installer/pankha_installer.exe`
 
 ---
 
-## 🚀 CI/CD
+## CI/CD
 
-Every push to `main` automatically triggers a GitHub Actions workflow that:
+Every push to `main` triggers a GitHub Actions workflow that:
 
 1. Builds the C# backend (self-contained, x64)
 2. Builds the Qt C++ frontend (MSYS2 Clang64)
@@ -177,9 +177,9 @@ See [`.github/workflows/release.yml`](.github/workflows/release.yml) for the ful
 
 ---
 
-## ⚙️ Configuration
+## Configuration
 
-Settings are stored in the **Windows Registry**:
+Settings are stored in the Windows Registry:
 
 | Key | Location |
 |---|---|
@@ -190,7 +190,7 @@ Settings include: theme selection, poll interval, minimize-to-tray behavior, and
 
 ---
 
-## 📝 API Reference
+## API Reference
 
 The C# backend exposes a local REST API on `http://localhost:5555`:
 
@@ -203,9 +203,9 @@ The C# backend exposes a local REST API on `http://localhost:5555`:
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
-Contributions are welcome! To get started:
+Contributions are welcome. To get started:
 
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/my-feature`
@@ -215,12 +215,12 @@ Contributions are welcome! To get started:
 
 ---
 
-## 📄 License
+## License
 
-This project is open source. See the [LICENSE](LICENSE) file for details.
+MIT License. See [LICENSE](LICENSE) for details.
 
 ---
 
 <p align="center">
-  Made with ❤️ by <a href="https://github.com/itznan">itznan</a>
+  Made with care by <a href="https://github.com/itznan">itznan</a>
 </p>
