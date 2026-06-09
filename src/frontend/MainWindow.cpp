@@ -1,4 +1,6 @@
 #include "MainWindow.h"
+#include "components/SmoothScrollFilter.h"
+#include "components/FanCardWidget.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QFormLayout>
@@ -10,113 +12,20 @@
 #include <QDebug>
 #include <QStatusBar>
 #include <QStyle>
+#include <QGraphicsOpacityEffect>
+#include <QPropertyAnimation>
+#include <QWheelEvent>
+#include <QScrollBar>
+#include <QSettings>
+#include <QDir>
+#include <QCoreApplication>
 
-// ==========================================================
-// FanCardWidget Implementation
-// ==========================================================
-
-FanCardWidget::FanCardWidget(const QJsonObject &fan, QWidget *parent)
-    : QFrame(parent)
-    , m_isSelected(false)
-{
-    setObjectName("fanCard");
-    setProperty("class", "FanCard");
-    setProperty("selected", false);
-    setCursor(Qt::PointingHandCursor);
-
-    m_fanId = fan["Id"].toString();
-
-    QVBoxLayout *layout = new QVBoxLayout(this);
-    layout->setContentsMargins(12, 12, 12, 12);
-    layout->setSpacing(6);
-
-    QHBoxLayout *topRow = new QHBoxLayout();
-    m_nameLabel = new QLabel(fan["Name"].toString(), this);
-    m_nameLabel->setObjectName("fanCardName");
-    topRow->addWidget(m_nameLabel);
-    topRow->addStretch(1);
-
-    m_modeBadge = new QLabel(this);
-    topRow->addWidget(m_modeBadge);
-    layout->addLayout(topRow);
-
-    QHBoxLayout *midRow = new QHBoxLayout();
-    m_hardwareLabel = new QLabel(fan["HardwareName"].toString(), this);
-    m_hardwareLabel->setObjectName("fanCardHardware");
-    midRow->addWidget(m_hardwareLabel);
-    midRow->addStretch(1);
-
-    int rpm = fan["Rpm"].toDouble();
-    m_rpmLabel = new QLabel(QString("%1 RPM").arg(rpm), this);
-    m_rpmLabel->setObjectName("fanCardRpm");
-    midRow->addWidget(m_rpmLabel);
-    layout->addLayout(midRow);
-
-    m_progressBar = new QProgressBar(this);
-    m_progressBar->setFixedHeight(4);
-    m_progressBar->setTextVisible(false);
-    m_progressBar->setRange(0, 100);
-    layout->addWidget(m_progressBar);
-
-    updateData(fan);
-}
-
-void FanCardWidget::updateData(const QJsonObject &fan)
-{
-    int rpm = fan["Rpm"].toDouble();
-    int minRpm = fan["Min"].toDouble();
-    int maxRpm = fan["Max"].toDouble();
-    int currentDuty = fan["SpeedPercent"].toDouble();
-
-    m_rpmLabel->setText(QString("%1 RPM").arg(rpm));
-
-    // Update progress bar
-    int progressVal = 0;
-    if (maxRpm > minRpm && maxRpm > 0) {
-        progressVal = qBound(0, (rpm - minRpm) * 100 / (maxRpm - minRpm), 100);
-    } else if (rpm > 0) {
-        progressVal = qBound(0, rpm * 100 / 3000, 100);
-    }
-    m_progressBar->setValue(progressVal);
-
-    // Update badge mode
-    QString mode = fan["Mode"].toString().toLower();
-    QString controlId = fan["ControlId"].toString();
-    if (controlId.isEmpty()) {
-        m_modeBadge->setText("MONITOR ONLY");
-        m_modeBadge->setObjectName("badgeMonitor");
-    } else if (mode == "software") {
-        m_modeBadge->setText("MANUAL");
-        m_modeBadge->setObjectName("badgeManual");
-    } else {
-        m_modeBadge->setText("AUTO");
-        m_modeBadge->setObjectName("badgeAuto");
-    }
-
-    // Refresh styling since objectName might have changed
-    m_modeBadge->style()->unpolish(m_modeBadge);
-    m_modeBadge->style()->polish(m_modeBadge);
-}
-
-void FanCardWidget::setSelectedState(bool selected)
-{
-    m_isSelected = selected;
-    setProperty("selected", selected);
-    style()->unpolish(this);
-    style()->polish(this);
-}
-
-void FanCardWidget::mousePressEvent(QMouseEvent *event)
-{
-    emit clicked(m_fanId);
-    QFrame::mousePressEvent(event);
-}
 
 // ==========================================================
 // MainWindow Implementation
 // ==========================================================
 
-MainWindow::MainWindow(QWidget *parent)
+MainWindow::MainWindow(bool startMinimized, QWidget *parent)
     : QMainWindow(parent)
     , m_backendLauncher(new BackendLauncher(this))
     , m_apiClient(new FanApiClient(this))
@@ -126,10 +35,12 @@ MainWindow::MainWindow(QWidget *parent)
     , m_consecutiveErrors(0)
     , m_pendingManualChange(false)
     , m_pollInterval(2000)
+    , m_dragActive(false)
+    , m_forceClose(false)
 {
     setupUI();
     setupConnections();
-    loadStylesheet();
+    loadSettings();
 
     // Start elapsed clock
     m_elapsedTimer.start();
@@ -149,6 +60,9 @@ MainWindow::~MainWindow()
 
 void MainWindow::setupUI()
 {
+    // Hide Windows standard titlebar
+    setWindowFlags(Qt::FramelessWindowHint | Qt::WindowSystemMenuHint | Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
+    
     setWindowTitle("Pankha – Fan Control");
     setMinimumSize(860, 560);
     resize(920, 620);
@@ -170,6 +84,43 @@ void MainWindow::setupUI()
     QVBoxLayout *leftLayout = new QVBoxLayout(m_leftPane);
     leftLayout->setContentsMargins(16, 16, 16, 16);
     leftLayout->setSpacing(12);
+
+    // macOS traffic lights (functional buttons)
+    QHBoxLayout *trafficLightsLayout = new QHBoxLayout();
+    trafficLightsLayout->setSpacing(8);
+    trafficLightsLayout->setContentsMargins(4, 0, 0, 8);
+    
+    QPushButton *closeDot = new QPushButton("×", m_leftPane);
+    closeDot->setObjectName("macCloseDot");
+    closeDot->setFixedSize(12, 12);
+    closeDot->setCursor(Qt::PointingHandCursor);
+    
+    QPushButton *minimizeDot = new QPushButton("−", m_leftPane);
+    minimizeDot->setObjectName("macMinimizeDot");
+    minimizeDot->setFixedSize(12, 12);
+    minimizeDot->setCursor(Qt::PointingHandCursor);
+    
+    QPushButton *maximizeDot = new QPushButton("+", m_leftPane);
+    maximizeDot->setObjectName("macMaximizeDot");
+    maximizeDot->setFixedSize(12, 12);
+    maximizeDot->setCursor(Qt::PointingHandCursor);
+
+    // Functional window controls connection
+    connect(closeDot, &QPushButton::clicked, this, &MainWindow::close);
+    connect(minimizeDot, &QPushButton::clicked, this, &MainWindow::showMinimized);
+    connect(maximizeDot, &QPushButton::clicked, this, [this]() {
+        if (isMaximized()) {
+            showNormal();
+        } else {
+            showMaximized();
+        }
+    });
+    
+    trafficLightsLayout->addWidget(closeDot);
+    trafficLightsLayout->addWidget(minimizeDot);
+    trafficLightsLayout->addWidget(maximizeDot);
+    trafficLightsLayout->addStretch(1);
+    leftLayout->addLayout(trafficLightsLayout);
 
     // Logo / Header
     QHBoxLayout *logoRow = new QHBoxLayout();
@@ -206,6 +157,7 @@ void MainWindow::setupUI()
     m_listLayout->addStretch(1); // keeps cards pushed to the top
     
     m_scrollArea->setWidget(m_listContainer);
+    m_scrollArea->viewport()->installEventFilter(new SmoothScrollFilter(m_scrollArea->verticalScrollBar(), m_scrollArea));
     leftLayout->addWidget(m_scrollArea, 1);
 
     // Left pane footer
@@ -259,6 +211,9 @@ void MainWindow::setupUI()
     m_detailScrollArea->setFrameShape(QFrame::NoFrame);
     m_detailScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_detailScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+
+    QGraphicsOpacityEffect *detailFadeEffect = new QGraphicsOpacityEffect(m_detailScrollArea);
+    m_detailScrollArea->setGraphicsEffect(detailFadeEffect);
 
     // Detail widget
     m_detailWidget = new QWidget(m_detailScrollArea);
@@ -346,11 +301,7 @@ void MainWindow::setupUI()
 
 
 
-    m_resetAutoExitCheck = new QCheckBox("Reset to Auto on exit", ctrlGroup);
-    m_resetAutoExitCheck->setChecked(true);
-    m_resetAutoExitCheck->setEnabled(false); // enabled only when manual override is active
-    m_resetAutoExitCheck->setCursor(Qt::PointingHandCursor);
-    ctrlLayout->addWidget(m_resetAutoExitCheck);
+
 
     // Advanced section (Collapsible)
     m_advancedLink = new QLabel("<a href=\"toggle\" style=\"text-decoration:none; color:#3b82f6; font-size:11px;\">▸ Show advanced options</a>", ctrlGroup);
@@ -389,22 +340,19 @@ void MainWindow::setupUI()
 
     // Apply & Reset footer
     QHBoxLayout *actionRow = new QHBoxLayout();
-    m_resetAutoButton = new QPushButton("Reset to Auto", m_detailWidget);
-    m_resetAutoButton->setEnabled(false);
-    m_resetAutoButton->setCursor(Qt::PointingHandCursor);
     
     m_applyButton = new QPushButton("Apply Speed", m_detailWidget);
     m_applyButton->setObjectName("applyButton");
     m_applyButton->setEnabled(false);
     m_applyButton->setCursor(Qt::PointingHandCursor);
 
-    actionRow->addWidget(m_resetAutoButton);
     actionRow->addWidget(m_applyButton);
     detailLayout->addLayout(actionRow);
 
     detailLayout->addStretch(1); // Keeps elements pushed to the top and prevents layout squishing when advanced panel is opened
 
     m_detailScrollArea->setWidget(m_detailWidget);
+    m_detailScrollArea->viewport()->installEventFilter(new SmoothScrollFilter(m_detailScrollArea->verticalScrollBar(), m_detailScrollArea));
     rightLayout->addWidget(m_detailScrollArea, 1);
     m_detailScrollArea->setVisible(false); // Hide until selected
 
@@ -414,6 +362,9 @@ void MainWindow::setupUI()
     m_settingsScrollArea->setFrameShape(QFrame::NoFrame);
     m_settingsScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_settingsScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+
+    QGraphicsOpacityEffect *settingsFadeEffect = new QGraphicsOpacityEffect(m_settingsScrollArea);
+    m_settingsScrollArea->setGraphicsEffect(settingsFadeEffect);
 
     m_settingsWidget = new QWidget(m_settingsScrollArea);
     m_settingsWidget->setObjectName("settingsWidgetContainer");
@@ -469,6 +420,22 @@ void MainWindow::setupUI()
     pollingLayout->addRow("Sensor Poll Interval:", m_pollIntervalSpin);
     settingsLayout->addWidget(pollingGroup);
 
+    // Group 3.5: System Preferences
+    QGroupBox *systemPrefsGroup = new QGroupBox("SYSTEM PREFERENCES", m_settingsWidget);
+    QVBoxLayout *systemPrefsLayout = new QVBoxLayout(systemPrefsGroup);
+    systemPrefsLayout->setSpacing(10);
+    
+    m_startOnBootCheck = new QCheckBox("Start application on Windows boot", systemPrefsGroup);
+    m_startOnBootCheck->setCursor(Qt::PointingHandCursor);
+    systemPrefsLayout->addWidget(m_startOnBootCheck);
+    
+    m_minimizeToTrayCheck = new QCheckBox("Minimize to system tray instead of closing", systemPrefsGroup);
+    m_minimizeToTrayCheck->setChecked(true);
+    m_minimizeToTrayCheck->setCursor(Qt::PointingHandCursor);
+    systemPrefsLayout->addWidget(m_minimizeToTrayCheck);
+    
+    settingsLayout->addWidget(systemPrefsGroup);
+
     // Group 4: About
     QGroupBox *aboutGroup = new QGroupBox("ABOUT", m_settingsWidget);
     QVBoxLayout *aboutLayout = new QVBoxLayout(aboutGroup);
@@ -488,6 +455,7 @@ void MainWindow::setupUI()
     settingsLayout->addStretch(1); // Keep settings aligned to top
 
     m_settingsScrollArea->setWidget(m_settingsWidget);
+    m_settingsScrollArea->viewport()->installEventFilter(new SmoothScrollFilter(m_settingsScrollArea->verticalScrollBar(), m_settingsScrollArea));
     rightLayout->addWidget(m_settingsScrollArea, 1);
     m_settingsScrollArea->setVisible(false); // Hide by default
 
@@ -498,6 +466,28 @@ void MainWindow::setupUI()
     m_statusRightLabel = new QLabel("00:00:00", this);
     statusBar()->addWidget(m_statusLeftLabel, 1);
     statusBar()->addPermanentWidget(m_statusRightLabel);
+    statusBar()->setSizeGripEnabled(true);
+
+    // System Tray Icon setup
+    m_trayIcon = new QSystemTrayIcon(this);
+    m_trayIcon->setIcon(QIcon(":/images/logo.png"));
+    m_trayIcon->setToolTip("Pankha Fan Control");
+
+    QMenu *trayMenu = new QMenu(this);
+    QAction *showAction = new QAction("Show Window", this);
+    QAction *quitAction = new QAction("Exit", this);
+
+    trayMenu->addAction(showAction);
+    trayMenu->addSeparator();
+    trayMenu->addAction(quitAction);
+
+    m_trayIcon->setContextMenu(trayMenu);
+
+    connect(showAction, &QAction::triggered, this, &MainWindow::showNormalAndActivate);
+    connect(quitAction, &QAction::triggered, this, &MainWindow::onQuitActionTriggered);
+    connect(m_trayIcon, &QSystemTrayIcon::activated, this, &MainWindow::onTrayIconActivated);
+
+    m_trayIcon->show();
 }
 
 void MainWindow::setupConnections()
@@ -509,7 +499,6 @@ void MainWindow::setupConnections()
     // UI callbacks
     connect(m_rescanButton, &QPushButton::clicked, this, &MainWindow::onRescanClicked);
     connect(m_manualOverrideCheck, &QCheckBox::toggled, this, &MainWindow::onManualOverrideToggled);
-    connect(m_resetAutoExitCheck, &QCheckBox::toggled, this, &MainWindow::onResetAutoExitToggled);
     connect(m_showRpmStatusBarCheck, &QCheckBox::clicked, this, &MainWindow::updateStatusBar);
     
     // Collapsible advanced panel
@@ -521,7 +510,6 @@ void MainWindow::setupConnections()
 
     // Footer actions
     connect(m_applyButton, &QPushButton::clicked, this, &MainWindow::onApplyClicked);
-    connect(m_resetAutoButton, &QPushButton::clicked, this, &MainWindow::onResetAutoClicked);
 
     // Timers
     connect(m_pollTimer, &QTimer::timeout, this, &MainWindow::onPollTimerTick);
@@ -533,6 +521,9 @@ void MainWindow::setupConnections()
     // Settings connection
     connect(m_settingsButton, &QPushButton::clicked, this, &MainWindow::onSettingsClicked);
     connect(m_pollIntervalSpin, qOverload<int>(&QSpinBox::valueChanged), this, &MainWindow::onPollIntervalChanged);
+    connect(m_startOnBootCheck, &QCheckBox::toggled, this, &MainWindow::onStartOnBootToggled);
+    connect(m_minimizeToTrayCheck, &QCheckBox::toggled, this, &MainWindow::onMinimizeToTrayToggled);
+    connect(m_showRpmStatusBarCheck, &QCheckBox::clicked, this, &MainWindow::saveSettings);
 }
 
 void MainWindow::loadStylesheet()
@@ -721,7 +712,6 @@ void MainWindow::onApiError(const QString &message)
         setConnectionStatus("Offline", "#EF4444");
         m_statusLeftLabel->setText("Connection lost. Click \"Rescan\" to retry.");
         m_applyButton->setEnabled(false);
-        m_resetAutoButton->setEnabled(false);
     }
 }
 
@@ -738,6 +728,7 @@ void MainWindow::showDetailsPanel()
     m_emptyStateWidget->setVisible(false);
     m_detailScrollArea->setVisible(true);
     m_settingsScrollArea->setVisible(false);
+    animateFadeIn(m_detailScrollArea);
 }
 
 void MainWindow::updateUIWithSelectedFan(bool fullRefresh)
@@ -781,7 +772,17 @@ void MainWindow::updateUIWithSelectedFan(bool fullRefresh)
     } else if (rpm > 0) {
         progressVal = qBound(0, rpm * 100 / 3000, 100);
     }
-    m_progressBar->setValue(progressVal);
+    
+    if (fullRefresh) {
+        m_progressBar->setValue(progressVal);
+    } else {
+        QPropertyAnimation *progressAnim = new QPropertyAnimation(m_progressBar, "value", this);
+        progressAnim->setDuration(400);
+        progressAnim->setStartValue(m_progressBar->value());
+        progressAnim->setEndValue(progressVal);
+        progressAnim->setEasingCurve(QEasingCurve::OutQuad);
+        progressAnim->start(QAbstractAnimation::DeleteWhenStopped);
+    }
 
     bool hasControl = !m_selectedControlId.isEmpty();
 
@@ -800,21 +801,14 @@ void MainWindow::updateUIWithSelectedFan(bool fullRefresh)
         m_controlIdEdit->setText(m_selectedControlId);
 
         m_manualOverrideCheck->setEnabled(hasControl);
-        m_resetAutoButton->setEnabled(hasControl);
 
         if (hasControl) {
             QString mode = selectedFan["Mode"].toString().toLower();
             bool isManual = (mode == "software");
-            bool resetOnExit = selectedFan["ResetOnExit"].toBool(true);
             
             m_manualOverrideCheck->blockSignals(true);
             m_manualOverrideCheck->setChecked(isManual);
             m_manualOverrideCheck->blockSignals(false);
-
-            m_resetAutoExitCheck->setEnabled(isManual);
-            m_resetAutoExitCheck->blockSignals(true);
-            m_resetAutoExitCheck->setChecked(resetOnExit);
-            m_resetAutoExitCheck->blockSignals(false);
 
             m_targetSpeedLabel->setEnabled(isManual);
             m_targetSpeedSlider->setEnabled(isManual);
@@ -851,17 +845,9 @@ void MainWindow::updateUIWithSelectedFan(bool fullRefresh)
             // This prevents the background poll from re-enabling buttons mid-request
             // or overwriting checkbox state before the user has applied changes.
             if (!m_pendingManualChange) {
-                m_resetAutoButton->setEnabled(m_consecutiveErrors < 3);
-
                 m_manualOverrideCheck->blockSignals(true);
                 m_manualOverrideCheck->setChecked(isManual);
                 m_manualOverrideCheck->blockSignals(false);
-
-                m_resetAutoExitCheck->setEnabled(isManual);
-                bool resetOnExit = selectedFan["ResetOnExit"].toBool(true);
-                m_resetAutoExitCheck->blockSignals(true);
-                m_resetAutoExitCheck->setChecked(resetOnExit);
-                m_resetAutoExitCheck->blockSignals(false);
 
                 m_targetSpeedLabel->setEnabled(isManual);
                 m_targetSpeedSlider->setEnabled(isManual);
@@ -940,17 +926,7 @@ void MainWindow::onManualOverrideToggled(bool checked)
     m_targetSpeedLabel->setEnabled(checked);
     m_targetSpeedSlider->setEnabled(checked);
     m_targetSpeedSpin->setEnabled(checked);
-    m_resetAutoExitCheck->setEnabled(checked);
     m_applyButton->setEnabled(checked && m_consecutiveErrors < 3);
-}
-
-void MainWindow::onResetAutoExitToggled(bool checked)
-{
-    Q_UNUSED(checked);
-    if (m_manualOverrideCheck->isChecked()) {
-        m_pendingManualChange = true;
-        m_applyButton->setEnabled(m_consecutiveErrors < 3);
-    }
 }
 
 void MainWindow::onApplyClicked()
@@ -976,7 +952,7 @@ void MainWindow::onApplyClicked()
     disconnect(m_apiClient, &FanApiClient::controlApplied, nullptr, nullptr);
     connect(m_apiClient, &FanApiClient::controlApplied, this, &MainWindow::onControlApplied);
 
-    m_apiClient->setManualSpeed(m_selectedControlId, targetSpeed, m_resetAutoExitCheck->isChecked());
+    m_apiClient->setManualSpeed(m_selectedControlId, targetSpeed, false);
 }
 
 void MainWindow::onControlApplied(const QString &id, bool success)
@@ -995,40 +971,7 @@ void MainWindow::onControlApplied(const QString &id, bool success)
     }
 }
 
-void MainWindow::onResetAutoClicked()
-{
-    if (m_selectedControlId.isEmpty()) return;
 
-    // Lock buttons while the request is in flight.
-    m_pendingManualChange = true;
-    m_resetAutoButton->setEnabled(false);
-
-    disconnect(m_apiClient, &FanApiClient::controlReset, nullptr, nullptr);
-    connect(m_apiClient, &FanApiClient::controlReset, this, &MainWindow::onControlReset);
-
-    m_apiClient->setAuto(m_selectedControlId);
-}
-
-void MainWindow::onControlReset(const QString &id, bool success)
-{
-    Q_UNUSED(id);
-    disconnect(m_apiClient, &FanApiClient::controlReset, this, &MainWindow::onControlReset);
-    m_pendingManualChange = false;
-
-    if (success) {
-        statusBar()->showMessage("Restored BIOS auto control.", 3000);
-        m_manualOverrideCheck->setChecked(false);
-        m_targetSpeedLabel->setEnabled(false);
-        m_targetSpeedSlider->setEnabled(false);
-        m_targetSpeedSpin->setEnabled(false);
-        m_applyButton->setEnabled(false);
-
-        // Fetch verification state
-        m_apiClient->getFans();
-    } else {
-        QMessageBox::critical(this, "Operation Failed", "Could not restore automatic BIOS control for this channel.");
-    }
-}
 
 void MainWindow::onAdvancedToggleClicked(const QString &link)
 {
@@ -1046,6 +989,7 @@ void MainWindow::onThemeChanged(int index)
 {
     Q_UNUSED(index);
     loadStylesheet();
+    saveSettings();
 }
 
 void MainWindow::onSettingsClicked()
@@ -1061,6 +1005,7 @@ void MainWindow::onSettingsClicked()
     m_emptyStateWidget->setVisible(false);
     m_detailScrollArea->setVisible(false);
     m_settingsScrollArea->setVisible(true);
+    animateFadeIn(m_settingsScrollArea);
 }
 
 void MainWindow::onPollIntervalChanged(int value)
@@ -1069,6 +1014,7 @@ void MainWindow::onPollIntervalChanged(int value)
     if (m_pollTimer->isActive()) {
         m_pollTimer->start(m_pollInterval);
     }
+    saveSettings();
 }
 
 void MainWindow::onClockTimerTick()
@@ -1086,14 +1032,137 @@ void MainWindow::onClockTimerTick()
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
-    m_pollTimer->stop();
-    m_clockTimer->stop();
-
-    if (m_resetAutoExitCheck->isChecked() && !m_selectedControlId.isEmpty()) {
-        // Rely on backend shutdown cleaner (stdin closed),
-        // which resets all software controls to auto automatically.
+    if (m_minimizeToTrayCheck->isChecked() && !m_forceClose) {
+        hide();
+        event->ignore();
+    } else {
+        m_pollTimer->stop();
+        m_clockTimer->stop();
+        m_trayIcon->hide();
+        m_backendLauncher->stop();
+        event->accept();
     }
+}
+
+void MainWindow::mousePressEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton && event->position().y() < 60) {
+        m_dragActive = true;
+        m_dragPosition = event->globalPosition().toPoint() - frameGeometry().topLeft();
+        event->accept();
+    } else {
+        QMainWindow::mousePressEvent(event);
+    }
+}
+
+void MainWindow::mouseMoveEvent(QMouseEvent *event)
+{
+    if (m_dragActive && (event->buttons() & Qt::LeftButton)) {
+        move(event->globalPosition().toPoint() - m_dragPosition);
+        event->accept();
+    } else {
+        QMainWindow::mouseMoveEvent(event);
+    }
+}
+
+void MainWindow::mouseReleaseEvent(QMouseEvent *event)
+{
+    m_dragActive = false;
+    QMainWindow::mouseReleaseEvent(event);
+}
+
+void MainWindow::animateFadeIn(QWidget *widget)
+{
+    QGraphicsOpacityEffect *effect = qobject_cast<QGraphicsOpacityEffect*>(widget->graphicsEffect());
+    if (effect) {
+        QPropertyAnimation *anim = new QPropertyAnimation(effect, "opacity", widget);
+        anim->setDuration(250);
+        anim->setStartValue(0.0);
+        anim->setEndValue(1.0);
+        anim->setEasingCurve(QEasingCurve::OutQuad);
+        anim->start(QAbstractAnimation::DeleteWhenStopped);
+    }
+}
+
+void MainWindow::onMinimizeToTrayToggled(bool checked)
+{
+    Q_UNUSED(checked);
+    saveSettings();
+}
+
+void MainWindow::onStartOnBootToggled(bool checked)
+{
+    setStartOnBoot(checked);
+    saveSettings();
+}
+
+void MainWindow::onTrayIconActivated(QSystemTrayIcon::ActivationReason reason)
+{
+    if (reason == QSystemTrayIcon::DoubleClick || reason == QSystemTrayIcon::Trigger) {
+        if (isVisible()) {
+            hide();
+        } else {
+            showNormalAndActivate();
+        }
+    }
+}
+
+void MainWindow::onQuitActionTriggered()
+{
+    m_forceClose = true;
+    close();
+}
+
+void MainWindow::showNormalAndActivate()
+{
+    showNormal();
+    activateWindow();
+    raise();
+}
+
+void MainWindow::saveSettings()
+{
+    QSettings settings("itznan", "Pankha");
+    settings.setValue("theme", m_themeComboBox->currentIndex());
+    settings.setValue("showRpm", m_showRpmStatusBarCheck->isChecked());
+    settings.setValue("pollInterval", m_pollInterval);
+    settings.setValue("minimizeToTray", m_minimizeToTrayCheck->isChecked());
+    settings.setValue("startOnBoot", m_startOnBootCheck->isChecked());
+}
+
+void MainWindow::loadSettings()
+{
+    QSettings settings("itznan", "Pankha");
     
-    m_backendLauncher->stop();
-    event->accept();
+    int theme = settings.value("theme", 0).toInt();
+    m_themeComboBox->setCurrentIndex(theme);
+    loadStylesheet();
+    
+    bool showRpm = settings.value("showRpm", true).toBool();
+    m_showRpmStatusBarCheck->setChecked(showRpm);
+    
+    int interval = settings.value("pollInterval", 2000).toInt();
+    m_pollIntervalSpin->setValue(interval);
+    m_pollInterval = interval;
+    
+    bool minToTray = settings.value("minimizeToTray", true).toBool();
+    m_minimizeToTrayCheck->setChecked(minToTray);
+    
+    bool startBoot = settings.value("startOnBoot", false).toBool();
+    m_startOnBootCheck->setChecked(startBoot);
+}
+
+void MainWindow::setStartOnBoot(bool enabled)
+{
+#ifdef Q_OS_WIN
+    QSettings registrySettings("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", QSettings::NativeFormat);
+    if (enabled) {
+        QString appPath = QDir::toNativeSeparators(QCoreApplication::applicationFilePath());
+        registrySettings.setValue("PankhaFanControl", "\"" + appPath + "\" --startup");
+    } else {
+        registrySettings.remove("PankhaFanControl");
+    }
+#else
+    Q_UNUSED(enabled);
+#endif
 }

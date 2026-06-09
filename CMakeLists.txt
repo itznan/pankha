@@ -13,15 +13,19 @@ find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network)
 
 # Source files
 set(SOURCES
-    main.cpp
-    MainWindow.cpp
-    MainWindow.h
-    FanApiClient.cpp
-    FanApiClient.h
-    BackendLauncher.cpp
-    BackendLauncher.h
-    resources.qrc
-    resource.rc
+    src/frontend/main.cpp
+    src/frontend/MainWindow.cpp
+    src/frontend/MainWindow.h
+    src/frontend/FanApiClient.cpp
+    src/frontend/FanApiClient.h
+    src/frontend/BackendLauncher.cpp
+    src/frontend/BackendLauncher.h
+    src/frontend/components/SmoothScrollFilter.h
+    src/frontend/components/SmoothScrollFilter.cpp
+    src/frontend/components/FanCardWidget.h
+    src/frontend/components/FanCardWidget.cpp
+    src/frontend/resources.qrc
+    src/frontend/resource.rc
 )
 
 add_executable(FanControlHost ${SOURCES})

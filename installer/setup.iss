@@ -2,7 +2,7 @@
 ; Defines how the single-file installer is compiled.
 
 #define MyAppName "pankha"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.0.1"
 #define MyAppPublisher "itznan"
 #define MyAppExeName "FanControlHost.exe"
 
@@ -17,10 +17,12 @@ DisableProgramGroupPage=yes
 PrivilegesRequired=admin
 OutputDir=.
 OutputBaseFilename=pankha_installer
-SetupIconFile=..\logo.ico
+SetupIconFile=..\src\frontend\icons\logo.ico
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
+ArchitecturesInstallIn64BitMode=x64compatible
+ArchitecturesAllowed=x64compatible
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"

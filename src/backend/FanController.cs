@@ -165,7 +165,7 @@ public class FanController : IDisposable
         return controlInfos;
     }
 
-    public bool SetControlManual(string controlId, float speedPercent, bool resetOnExit = true)
+    public bool SetControlManual(string controlId, float speedPercent, bool resetOnExit = false)
     {
         // Refresh first to populate cache
         GetControls();
@@ -175,14 +175,8 @@ public class FanController : IDisposable
             if (sensor.Control != null)
             {
                 sensor.Control.SetSoftware(speedPercent);
-                if (resetOnExit)
-                {
-                    _skipResetOnExitControls.Remove(controlId);
-                }
-                else
-                {
-                    _skipResetOnExitControls.Add(controlId);
-                }
+                // Always add to persistent controls list to preserve speed on exit
+                _skipResetOnExitControls.Add(controlId);
                 return true;
             }
         }
@@ -271,26 +265,10 @@ public class FanController : IDisposable
 
     public void Dispose()
     {
-        // Reset controls that are NOT marked as persistent (i.e. resetOnExit = true)
-        foreach (var pair in _controlSensors)
-        {
-            string controlId = pair.Key;
-            var sensor = pair.Value;
-            if (_skipResetOnExitControls.Contains(controlId))
-            {
-                continue;
-            }
-            try
-            {
-                sensor.Control?.SetDefault();
-            }
-            catch { }
-        }
-
         // Only close the computer when no controls need to persist.
         // LibreHardwareMonitor's Computer.Close() calls Control.Close() on every
         // sensor, which unconditionally calls SetDefault() on any software-controlled
-        // fan — overriding the skip logic above and resetting fans back to BIOS.
+        // fan — overriding the skip logic and resetting fans back to BIOS.
         // When there ARE persistent controls we skip Close(); the OS releases
         // all hardware handles when the process exits anyway.
         if (_skipResetOnExitControls.Count == 0)

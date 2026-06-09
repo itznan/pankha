@@ -4,4 +4,4 @@
 1 24 "app.manifest"
 
 // Application icon (shown in Explorer, taskbar, alt-tab)
-1 ICON "logo.ico"
+1 ICON "icons/logo.ico"

@@ -17,6 +17,10 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QComboBox>
+#include <QMouseEvent>
+#include <QPoint>
+#include <QSystemTrayIcon>
+#include <QMenu>
 #include "FanApiClient.h"
 #include "BackendLauncher.h"
 
@@ -28,18 +32,20 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    MainWindow(QWidget *parent = nullptr);
+    MainWindow(bool startMinimized = false, QWidget *parent = nullptr);
     ~MainWindow();
 
 protected:
     void closeEvent(QCloseEvent *event) override;
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
 
 private slots:
     // API Callbacks
     void onScanResponse(const QJsonArray &fans);
     void onPollResponse(const QJsonArray &fans);
     void onControlApplied(const QString &id, bool success);
-    void onControlReset(const QString &id, bool success);
     void onApiError(const QString &message);
 
     // Backend launcher callbacks
@@ -53,12 +59,15 @@ private slots:
     void onSliderValueChanged(int value);
     void onSpinBoxValueChanged(int value);
     void onApplyClicked();
-    void onResetAutoClicked();
-    void onResetAutoExitToggled(bool checked);
     void onAdvancedToggleClicked(const QString &link);
     void onThemeChanged(int index);
     void onSettingsClicked();
     void onPollIntervalChanged(int value);
+    void onMinimizeToTrayToggled(bool checked);
+    void onStartOnBootToggled(bool checked);
+    void onTrayIconActivated(QSystemTrayIcon::ActivationReason reason);
+    void onQuitActionTriggered();
+    void showNormalAndActivate();
     
     // Timer handlers
     void onPollTimerTick();
@@ -73,6 +82,10 @@ private:
     void updateUIWithSelectedFan(bool fullRefresh);
     void showEmptyState(const QString &message);
     void showDetailsPanel();
+    void animateFadeIn(QWidget *widget);
+    void saveSettings();
+    void loadSettings();
+    void setStartOnBoot(bool enabled);
 
     // UI Structure
     QWidget *m_centralWidget;
@@ -105,7 +118,8 @@ private:
     QSpinBox *m_targetSpeedSpin;
     
     QCheckBox *m_showRpmStatusBarCheck;
-    QCheckBox *m_resetAutoExitCheck;
+    QCheckBox *m_minimizeToTrayCheck;
+    QCheckBox *m_startOnBootCheck;
 
     QLabel *m_targetSpeedLabel;
 
@@ -116,12 +130,12 @@ private:
     QSpinBox *m_maxRpmSpin;
     QLineEdit *m_controlIdEdit;
 
-    QPushButton *m_resetAutoButton;
     QPushButton *m_applyButton;
 
     // Status bar labels
     QLabel *m_statusLeftLabel;
     QLabel *m_statusRightLabel;
+    QSystemTrayIcon *m_trayIcon;
 
     // Global Settings Page
     QScrollArea *m_settingsScrollArea;
@@ -147,32 +161,13 @@ private:
     // True when the user has toggled manual override locally but hasn't applied yet.
     // Prevents the background poll from overwriting the checkbox state.
     bool m_pendingManualChange;
+    bool m_forceClose;
+
+    // Window dragging
+    bool m_dragActive;
+    QPoint m_dragPosition;
 };
 
-// FanCardWidget displays individual fan information in the list
-class FanCardWidget : public QFrame
-{
-    Q_OBJECT
-public:
-    FanCardWidget(const QJsonObject &fan, QWidget *parent = nullptr);
-    void updateData(const QJsonObject &fan);
-    void setSelectedState(bool selected);
-    QString fanId() const { return m_fanId; }
 
-signals:
-    void clicked(const QString &fanId);
-
-protected:
-    void mousePressEvent(QMouseEvent *event) override;
-
-private:
-    QString m_fanId;
-    QLabel *m_nameLabel;
-    QLabel *m_hardwareLabel;
-    QLabel *m_rpmLabel;
-    QLabel *m_modeBadge;
-    QProgressBar *m_progressBar;
-    bool m_isSelected;
-};
 
 #endif // MAINWINDOW_H

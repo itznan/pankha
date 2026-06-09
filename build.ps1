@@ -41,7 +41,7 @@ if ([string]::IsNullOrEmpty($dotnetPath)) {
 }
 
 Write-Host "Using dotnet SDK path: $dotnetPath" -ForegroundColor Gray
-& $dotnetPath publish -c Release -r win-x64 --self-contained true
+& $dotnetPath publish src/backend/FanControlApp.csproj -c Release -r win-x64 --self-contained true
 
 if ($LASTEXITCODE -ne 0) {
     Write-Error "C# Backend compilation failed."
@@ -73,7 +73,7 @@ if (Test-Path "dist") {
 }
 New-Item -ItemType Directory -Path "dist" -Force | Out-Null
 Copy-Item -Path "build\FanControlHost.exe" -Destination "dist\" -Force
-Copy-Item -Path "bin\Release\net8.0\win-x64\publish\*" -Destination "dist\" -Force
+Copy-Item -Path "src\backend\bin\Release\net8.0\win-x64\publish\*" -Destination "dist\" -Force
 windeployqt.exe --release --no-translations --compiler-runtime dist\FanControlHost.exe
 
 # Statically trace and copy all compiler and runtime DLL dependencies recursively

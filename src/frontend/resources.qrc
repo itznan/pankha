@@ -1,0 +1,12 @@
+<RCC>
+    <qresource prefix="/">
+        <file>styles_light.qss</file>
+        <file>styles_dark.qss</file>
+        <file>images/logo.png</file>
+        <file>icons/check_on.svg</file>
+        <file>icons/check_off.svg</file>
+        <file>icons/check_disabled.svg</file>
+        <file>icons/check_off_light.svg</file>
+        <file>icons/check_disabled_light.svg</file>
+    </qresource>
+</RCC>
