@@ -1,34 +1,25 @@
   Determining projects to restore...
-  Restored D:\a\pankha\pankha\src\backend\FanControlApp.csproj (in 16.15 sec).
+  Restored D:\a\pankha\pankha\src\backend\FanControlApp.csproj (in 10.54 sec).
 D:\a\pankha\pankha\src\backend\Program.cs(84,29): warning CA1416: This call site is reachable on all platforms. 'WindowsPrincipal' is only supported on: 'windows'. (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1416) [D:\a\pankha\pankha\src\backend\FanControlApp.csproj]
 D:\a\pankha\pankha\src\backend\Program.cs(82,31): warning CA1416: This call site is reachable on all platforms. 'WindowsIdentity.GetCurrent()' is only supported on: 'windows'. (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1416) [D:\a\pankha\pankha\src\backend\FanControlApp.csproj]
-D:\a\pankha\pankha\src\backend\Program.cs(85,39): warning CA1416: This call site is reachable on all platforms. 'WindowsBuiltInRole.Administrator' is only supported on: 'windows'. (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1416) [D:\a\pankha\pankha\src\backend\FanControlApp.csproj]
 D:\a\pankha\pankha\src\backend\Program.cs(85,20): warning CA1416: This call site is reachable on all platforms. 'WindowsPrincipal.IsInRole(WindowsBuiltInRole)' is only supported on: 'windows'. (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1416) [D:\a\pankha\pankha\src\backend\FanControlApp.csproj]
+D:\a\pankha\pankha\src\backend\Program.cs(85,39): warning CA1416: This call site is reachable on all platforms. 'WindowsBuiltInRole.Administrator' is only supported on: 'windows'. (https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1416) [D:\a\pankha\pankha\src\backend\FanControlApp.csproj]
   FanControlApp -> D:\a\pankha\pankha\src\backend\bin\Release\net8.0\win-x64\FanControlBackend.dll
   FanControlApp -> D:\a\pankha\pankha\src\backend\bin\Release\net8.0\win-x64\publish\
--- The CXX compiler identification is Clang 20.1.8 with GNU-like command-line
--- Detecting CXX compiler ABI info
--- Detecting CXX compiler ABI info - done
--- Check for working CXX compiler: C:/Program Files/LLVM/bin/clang++.exe - skipped
--- Detecting CXX compile features
--- Detecting CXX compile features - done
-CMake Error at CMakeLists.txt:12 (find_package):
+-- The CXX compiler identification is unknown
+CMake Error at CMakeLists.txt:2 (project):
+  The CMAKE_CXX_COMPILER:
+
+    C:/msys64/clang64/bin/clang++.exe
+
+  is not a full path to an existing compiler tool.
+
+  Tell CMake where to find the compiler by setting either the environment
+  variable "CXX" or the CMake cache entry CMAKE_CXX_COMPILER to the full path
+  to the compiler, or to the compiler name if it is in the PATH.
+
+
 -- Configuring incomplete, errors occurred!
-  By not providing "FindQt6.cmake" in CMAKE_MODULE_PATH this project has
-  asked CMake to find a package configuration file provided by "Qt6", but
-  CMake did not find one.
-
-  Could not find a package configuration file provided by "Qt6" with any of
-  the following names:
-
-    Qt6Config.cmake
-    qt6-config.cmake
-
-  Add the installation prefix of "Qt6" to CMAKE_PREFIX_PATH or set "Qt6_DIR"
-  to a directory containing one of the above files.  If "Qt6" provides a
-  separate development package or SDK, be sure it has been installed.
-
-
 ninja: error: loading 'build.ninja': The system cannot find the file specified.
 
 
