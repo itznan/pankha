@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
+[System.Runtime.Versioning.SupportedOSPlatform("windows")]
 class Program
 {
     private static FanController? _controller;

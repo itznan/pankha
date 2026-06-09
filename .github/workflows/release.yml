@@ -1,5 +1,8 @@
 name: Build and Release
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 on:
   push:
     branches:
@@ -16,7 +19,7 @@ permissions:
 jobs:
   build:
     name: Build and Package
-    runs-on: windows-latest
+    runs-on: windows-2025
 
     steps:
       - name: Checkout Code
