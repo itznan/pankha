@@ -58,7 +58,7 @@ if (Test-Path "build\CMakeCache.txt") {
     Remove-Item -Path "build\CMakeCache.txt" -Force -ErrorAction SilentlyContinue
 }
 
-cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=C:/msys64/clang64 -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=C:/msys64/clang64 -DCMAKE_C_COMPILER=C:/msys64/clang64/bin/clang.exe -DCMAKE_CXX_COMPILER=C:/msys64/clang64/bin/clang++.exe
 cmake --build build --config Release
 
 if ($LASTEXITCODE -ne 0) {
