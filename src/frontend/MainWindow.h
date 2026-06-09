@@ -36,6 +36,7 @@ public:
 
 protected:
     void closeEvent(QCloseEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
@@ -82,6 +83,8 @@ private:
     void saveSettings();
     void loadSettings();
     void setStartOnBoot(bool enabled);
+    void applyRoundedCorners();
+    void updateRoundedMask();
 
     // UI Structure
     QWidget *m_centralWidget;
@@ -160,6 +163,9 @@ private:
     // Window dragging
     bool m_dragActive;
     QPoint m_dragPosition;
+
+    // Rounded corners
+    bool m_useNativeRoundedCorners;
 };
 
 #endif // MAINWINDOW_H

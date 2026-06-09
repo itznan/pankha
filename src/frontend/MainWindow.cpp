@@ -1,9 +1,25 @@
 #include "MainWindow.h"
 #include <QCloseEvent>
 #include <QMouseEvent>
+#include <QResizeEvent>
 #include <QGraphicsOpacityEffect>
 #include <QPropertyAnimation>
 #include <QApplication>
+#include <QPainterPath>
+#include <QRegion>
+
+#ifdef Q_OS_WIN
+#include <windows.h>
+#include <dwmapi.h>
+#pragma comment(lib, "dwmapi.lib")
+
+#ifndef DWMWA_WINDOW_CORNER_PREFERENCE
+#define DWMWA_WINDOW_CORNER_PREFERENCE 33
+#endif
+#ifndef DWMWCP_ROUND
+#define DWMWCP_ROUND 2
+#endif
+#endif
 
 MainWindow::MainWindow(bool startMinimized, QWidget *parent)
     : QMainWindow(parent)
@@ -17,10 +33,13 @@ MainWindow::MainWindow(bool startMinimized, QWidget *parent)
     , m_pollInterval(2000)
     , m_dragActive(false)
     , m_forceClose(false)
+    , m_useNativeRoundedCorners(false)
 {
+    setAttribute(Qt::WA_TranslucentBackground);
     setupUI();
     setupConnections();
     loadSettings();
+    applyRoundedCorners();
 
     m_elapsedTimer.start();
     m_clockTimer->start(1000);
@@ -129,4 +148,37 @@ void MainWindow::showNormalAndActivate()
     showNormal();
     activateWindow();
     raise();
+}
+
+void MainWindow::applyRoundedCorners()
+{
+#ifdef Q_OS_WIN
+    // Try native Windows 11 rounded corners via DWM API
+    HWND hwnd = reinterpret_cast<HWND>(winId());
+    int preference = DWMWCP_ROUND;
+    HRESULT hr = DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, &preference, sizeof(preference));
+    if (SUCCEEDED(hr)) {
+        m_useNativeRoundedCorners = true;
+        return;
+    }
+#endif
+    // Fallback: apply a QPainterPath region mask (works on Windows 10)
+    m_useNativeRoundedCorners = false;
+    updateRoundedMask();
+}
+
+void MainWindow::updateRoundedMask()
+{
+    const int radius = 12;
+    QPainterPath path;
+    path.addRoundedRect(rect(), radius, radius);
+    setMask(path.toFillPolygon().toPolygon());
+}
+
+void MainWindow::resizeEvent(QResizeEvent *event)
+{
+    QMainWindow::resizeEvent(event);
+    if (!m_useNativeRoundedCorners) {
+        updateRoundedMask();
+    }
 }

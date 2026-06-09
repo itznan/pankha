@@ -37,6 +37,7 @@ target_link_libraries(FanControlHost PRIVATE
     Qt6::Core
     Qt6::Widgets
     Qt6::Network
+    dwmapi
 )
 
 # Set subsystem as Windows GUI application (no console window)
