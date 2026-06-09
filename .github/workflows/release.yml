@@ -10,6 +10,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build and Package
@@ -42,7 +45,25 @@ jobs:
 
       - name: Run Build Script
         shell: pwsh
-        run: ./build.ps1
+        run: |
+          ./build.ps1 > build.log 2>&1
+          $exitCode = $LASTEXITCODE
+          if ($exitCode -ne 0) {
+            Write-Error "Build script failed with exit code $exitCode"
+            exit 1
+          }
+
+      - name: Commit and Push Build Logs
+        if: always()
+        shell: pwsh
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if (Test-Path build.log) {
+            git add build.log
+            git commit -m "chore: upload build logs [skip ci]"
+            git push origin main
+          }
 
       - name: Upload Installer Artifact
         if: startsWith(github.ref, 'refs/tags/v') == false
