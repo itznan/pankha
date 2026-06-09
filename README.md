@@ -45,8 +45,6 @@ pankha/
 │   └── setup.iss              # Inno Setup 6 Script
 │
 ├── CMakeLists.txt             # CMake building configuration
-├── build.ps1                  # PowerShell compilation script (C# + C++)
-└── build.bat                  # Batch build script wrapper
 ```
 
 ---
@@ -62,14 +60,34 @@ To build both the C# backend and C++ frontend, you will need:
 5. **Inno Setup 6** (Optional): Required if you wish to compile the single-file installer executable.
 
 ### Building
-You can compile the entire application (including copying DLLs and generating the installer) by running the PowerShell build script:
+You can compile the application step-by-step using the following commands:
 
-```powershell
-# Run the PowerShell build script
-powershell -ExecutionPolicy Bypass -File build.ps1
-```
+1. **Build C# Backend**:
+   ```powershell
+   dotnet publish src/backend/FanControlApp.csproj -c Release -r win-x64 --self-contained true
+   ```
 
-The compiled distribution folder will be outputted under `dist/` and the installer will be generated under `installer/pankha_installer.exe`.
+2. **Build Qt C++ Frontend**:
+   ```powershell
+   cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=C:/msys64/clang64 -DCMAKE_C_COMPILER=C:/msys64/clang64/bin/clang.exe -DCMAKE_CXX_COMPILER=C:/msys64/clang64/bin/clang++.exe
+   cmake --build build --config Release
+   ```
+
+3. **Deploy Dependencies**:
+   Create a `dist` directory, copy the built executables, and run `windeployqt` to bundle the Qt libraries:
+   ```powershell
+   New-Item -ItemType Directory -Path "dist" -Force
+   Copy-Item -Path "build\FanControlHost.exe" -Destination "dist\" -Force
+   Copy-Item -Path "src\backend\bin\Release\net8.0\win-x64\publish\*" -Destination "dist\" -Force
+   C:\msys64\clang64\bin\windeployqt.exe --release --no-translations --compiler-runtime dist\FanControlHost.exe
+   ```
+
+4. **Build Installer (Inno Setup)**:
+   ```powershell
+   & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\setup.iss
+   ```
+
+The generated single-file installer will be outputted to `installer/pankha_installer.exe`.
 
 ---
 
