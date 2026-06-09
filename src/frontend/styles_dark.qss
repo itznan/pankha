@@ -616,3 +616,26 @@ QLabel#dutyValueLabel {
     font-weight: 700;
     color: #30d158;
 }
+
+/* ── QMenu (System Tray Context Menu) ──────────────────────────────── */
+QMenu {
+    background-color: #2c2c2e;
+    border: 1px solid #3a3a3c;
+    border-radius: 8px;
+    padding: 4px;
+}
+QMenu::item {
+    background-color: transparent;
+    padding: 6px 24px 6px 16px;
+    border-radius: 4px;
+    color: #f5f5f7;
+}
+QMenu::item:selected {
+    background-color: #007aff;
+    color: #ffffff;
+}
+QMenu::separator {
+    height: 1px;
+    background-color: #3a3a3c;
+    margin: 4px 0px;
+}
