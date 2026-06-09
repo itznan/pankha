@@ -7,7 +7,41 @@ Write-Host "===============================================" -ForegroundColor Cy
 
 # 1. Build C# Backend
 Write-Host "`n[1/4] Building C# Backend..." -ForegroundColor Yellow
-& "E:\dotnet-sdk\dotnet.exe" publish -c Release -r win-x64 --self-contained true
+
+# Try to find a valid .NET SDK dotnet.exe path dynamically
+$dotnetPath = ""
+$candidates = @(
+    "E:\NAN\dotnet-sdk\dotnet.exe",
+    "E:\dotnet-sdk\dotnet.exe",
+    "C:\Program Files\dotnet\dotnet.exe"
+)
+
+# Also check if 'dotnet' is in PATH and contains SDKs
+if (Get-Command "dotnet" -ErrorAction SilentlyContinue) {
+    $sdkList = & dotnet --list-sdks 2>$null
+    if ($sdkList) {
+        $dotnetPath = (Get-Command "dotnet").Source
+    }
+}
+
+if ([string]::IsNullOrEmpty($dotnetPath)) {
+    foreach ($candidate in $candidates) {
+        if (Test-Path $candidate) {
+            $parentDir = Split-Path $candidate
+            if (Test-Path "$parentDir\sdk") {
+                $dotnetPath = $candidate
+                break
+            }
+        }
+    }
+}
+
+if ([string]::IsNullOrEmpty($dotnetPath)) {
+    $dotnetPath = "dotnet"
+}
+
+Write-Host "Using dotnet SDK path: $dotnetPath" -ForegroundColor Gray
+& $dotnetPath publish -c Release -r win-x64 --self-contained true
 
 if ($LASTEXITCODE -ne 0) {
     Write-Error "C# Backend compilation failed."
@@ -17,6 +51,13 @@ if ($LASTEXITCODE -ne 0) {
 # 2. Build Qt C++ Frontend
 Write-Host "`n[2/4] Building Qt C++ Frontend..." -ForegroundColor Yellow
 $env:PATH = "C:\msys64\clang64\bin;" + $env:PATH
+
+# Clean mismatched CMake Cache if it exists to avoid directory mismatch errors
+if (Test-Path "build\CMakeCache.txt") {
+    Write-Host "Removing stale CMakeCache.txt..." -ForegroundColor Gray
+    Remove-Item -Path "build\CMakeCache.txt" -Force -ErrorAction SilentlyContinue
+}
+
 cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=C:/msys64/clang64
 cmake --build build --config Release
 
@@ -27,6 +68,9 @@ if ($LASTEXITCODE -ne 0) {
 
 # 3. Deploy Dependencies to dist/
 Write-Host "`n[3/4] Organizing distribution and deploying dependencies..." -ForegroundColor Yellow
+if (Test-Path "dist") {
+    Remove-Item -Path "dist\*" -Recurse -Force -ErrorAction SilentlyContinue
+}
 New-Item -ItemType Directory -Path "dist" -Force | Out-Null
 Copy-Item -Path "build\FanControlHost.exe" -Destination "dist\" -Force
 Copy-Item -Path "bin\Release\net8.0\win-x64\publish\*" -Destination "dist\" -Force
@@ -34,7 +78,9 @@ windeployqt.exe --release --no-translations --compiler-runtime dist\FanControlHo
 
 # Statically trace and copy all compiler and runtime DLL dependencies recursively
 Write-Host "Resolving MSYS2 runtime dependencies recursively..." -ForegroundColor Yellow
-$distDir = "E:\Github\Pankha\dist"
+$scriptRoot = $PSScriptRoot
+if ([string]::IsNullOrEmpty($scriptRoot)) { $scriptRoot = $pwd.Path }
+$distDir = Join-Path $scriptRoot "dist"
 $msys2Bin = "C:\msys64\clang64\bin"
 $objdump = "$msys2Bin\objdump.exe"
 
@@ -83,7 +129,7 @@ if (Test-Path $isccPath) {
     if ($LASTEXITCODE -eq 0) {
         Write-Host "`n===============================================" -ForegroundColor Green
         Write-Host "SUCCESS: Installer compiled successfully!" -ForegroundColor Green
-        Write-Host "Output path: E:\Github\Pankha\installer\pankha_installer.exe" -ForegroundColor Green
+        Write-Host "Output path: $(Join-Path $scriptRoot 'installer\pankha_installer.exe')" -ForegroundColor Green
         Write-Host "===============================================" -ForegroundColor Green
     } else {
         Write-Error "Inno Setup compilation failed."

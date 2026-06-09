@@ -22,6 +22,7 @@ FanCardWidget::FanCardWidget(const QJsonObject &fan, QWidget *parent)
     setObjectName("fanCard");
     setProperty("class", "FanCard");
     setProperty("selected", false);
+    setCursor(Qt::PointingHandCursor);
 
     m_fanId = fan["Id"].toString();
 
@@ -124,6 +125,7 @@ MainWindow::MainWindow(QWidget *parent)
     , m_isScanning(false)
     , m_consecutiveErrors(0)
     , m_pendingManualChange(false)
+    , m_pollInterval(2000)
 {
     setupUI();
     setupConnections();
@@ -212,9 +214,19 @@ void MainWindow::setupUI()
     leftFooter->addWidget(m_connectionStatusLabel);
     leftFooter->addStretch(1);
     
+    // Settings Button
+    m_settingsButton = new QPushButton("⚙ Settings", m_leftPane);
+    m_settingsButton->setObjectName("settingsButton");
+    m_settingsButton->setToolTip("Open global application settings.");
+    m_settingsButton->setStyleSheet("font-size: 11px; min-height: 28px; max-height: 28px; padding: 4px 10px; border-radius: 6px;");
+    m_settingsButton->setCursor(Qt::PointingHandCursor);
+    leftFooter->addWidget(m_settingsButton);
+    leftFooter->addSpacing(6);
+    
     m_rescanButton = new QPushButton("Rescan Sensors", m_leftPane);
     m_rescanButton->setObjectName("rescanButton");
     m_rescanButton->setToolTip("Query the hardware controllers and update the channel lists.");
+    m_rescanButton->setCursor(Qt::PointingHandCursor);
     leftFooter->addWidget(m_rescanButton);
     leftLayout->addLayout(leftFooter);
 
@@ -241,8 +253,16 @@ void MainWindow::setupUI()
     emptyLayout->addStretch(1);
     rightLayout->addWidget(m_emptyStateWidget, 1);
 
+    // Detail Scroll Area
+    m_detailScrollArea = new QScrollArea(m_rightPane);
+    m_detailScrollArea->setWidgetResizable(true);
+    m_detailScrollArea->setFrameShape(QFrame::NoFrame);
+    m_detailScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_detailScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+
     // Detail widget
-    m_detailWidget = new QWidget(m_rightPane);
+    m_detailWidget = new QWidget(m_detailScrollArea);
+    m_detailWidget->setObjectName("detailWidgetContainer");
     QVBoxLayout *detailLayout = new QVBoxLayout(m_detailWidget);
     detailLayout->setContentsMargins(0, 0, 0, 0);
     detailLayout->setSpacing(16);
@@ -298,6 +318,7 @@ void MainWindow::setupUI()
     ctrlLayout->setSpacing(14);
 
     m_manualOverrideCheck = new QCheckBox("Enable Manual Override", ctrlGroup);
+    m_manualOverrideCheck->setCursor(Qt::PointingHandCursor);
     ctrlLayout->addWidget(m_manualOverrideCheck);
 
     // Target Speed label
@@ -311,6 +332,7 @@ void MainWindow::setupUI()
     m_targetSpeedSlider = new QSlider(Qt::Horizontal, ctrlGroup);
     m_targetSpeedSlider->setRange(0, 100);
     m_targetSpeedSlider->setEnabled(false);
+    m_targetSpeedSlider->setCursor(Qt::PointingHandCursor);
 
     m_targetSpeedSpin = new QSpinBox(ctrlGroup);
     m_targetSpeedSpin->setRange(0, 100);
@@ -322,14 +344,12 @@ void MainWindow::setupUI()
     sliderRow->addWidget(m_targetSpeedSpin);
     ctrlLayout->addLayout(sliderRow);
 
-    // Options
-    m_showRpmStatusBarCheck = new QCheckBox("Show RPM in status bar", ctrlGroup);
-    m_showRpmStatusBarCheck->setChecked(true);
-    ctrlLayout->addWidget(m_showRpmStatusBarCheck);
+
 
     m_resetAutoExitCheck = new QCheckBox("Reset to Auto on exit", ctrlGroup);
     m_resetAutoExitCheck->setChecked(true);
     m_resetAutoExitCheck->setEnabled(false); // enabled only when manual override is active
+    m_resetAutoExitCheck->setCursor(Qt::PointingHandCursor);
     ctrlLayout->addWidget(m_resetAutoExitCheck);
 
     // Advanced section (Collapsible)
@@ -371,17 +391,105 @@ void MainWindow::setupUI()
     QHBoxLayout *actionRow = new QHBoxLayout();
     m_resetAutoButton = new QPushButton("Reset to Auto", m_detailWidget);
     m_resetAutoButton->setEnabled(false);
+    m_resetAutoButton->setCursor(Qt::PointingHandCursor);
     
     m_applyButton = new QPushButton("Apply Speed", m_detailWidget);
     m_applyButton->setObjectName("applyButton");
     m_applyButton->setEnabled(false);
+    m_applyButton->setCursor(Qt::PointingHandCursor);
 
     actionRow->addWidget(m_resetAutoButton);
     actionRow->addWidget(m_applyButton);
     detailLayout->addLayout(actionRow);
 
-    rightLayout->addWidget(m_detailWidget, 1);
-    m_detailWidget->setVisible(false); // Hide until selected
+    detailLayout->addStretch(1); // Keeps elements pushed to the top and prevents layout squishing when advanced panel is opened
+
+    m_detailScrollArea->setWidget(m_detailWidget);
+    rightLayout->addWidget(m_detailScrollArea, 1);
+    m_detailScrollArea->setVisible(false); // Hide until selected
+
+    // Settings Scroll Area
+    m_settingsScrollArea = new QScrollArea(m_rightPane);
+    m_settingsScrollArea->setWidgetResizable(true);
+    m_settingsScrollArea->setFrameShape(QFrame::NoFrame);
+    m_settingsScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_settingsScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+
+    m_settingsWidget = new QWidget(m_settingsScrollArea);
+    m_settingsWidget->setObjectName("settingsWidgetContainer");
+    QVBoxLayout *settingsLayout = new QVBoxLayout(m_settingsWidget);
+    settingsLayout->setContentsMargins(0, 0, 0, 0);
+    settingsLayout->setSpacing(16);
+
+    // Settings Header
+    QVBoxLayout *settingsHeaderInfo = new QVBoxLayout();
+    settingsHeaderInfo->setSpacing(4);
+    QLabel *settingsTitle = new QLabel("Settings", m_settingsWidget);
+    settingsTitle->setObjectName("detailTitle");
+    QLabel *settingsSubtitle = new QLabel("Global Preferences & Options", m_settingsWidget);
+    settingsSubtitle->setObjectName("detailHardware");
+    settingsHeaderInfo->addWidget(settingsTitle);
+    settingsHeaderInfo->addWidget(settingsSubtitle);
+    settingsLayout->addLayout(settingsHeaderInfo);
+
+    // Group 1: Appearance
+    QGroupBox *appearanceGroup = new QGroupBox("APPEARANCE", m_settingsWidget);
+    QFormLayout *appearanceLayout = new QFormLayout(appearanceGroup);
+    appearanceLayout->setSpacing(10);
+    
+    m_themeComboBox = new QComboBox(appearanceGroup);
+    m_themeComboBox->addItem("Light", 0);
+    m_themeComboBox->addItem("Dark", 1);
+    m_themeComboBox->setCurrentIndex(0); // Default to Light
+    m_themeComboBox->setCursor(Qt::PointingHandCursor);
+    appearanceLayout->addRow("Application Theme:", m_themeComboBox);
+    settingsLayout->addWidget(appearanceGroup);
+
+    // Group 2: Status Bar
+    QGroupBox *statusBarGroup = new QGroupBox("STATUS BAR CONFIGURATION", m_settingsWidget);
+    QVBoxLayout *statusBarLayout = new QVBoxLayout(statusBarGroup);
+    statusBarLayout->setSpacing(10);
+    
+    m_showRpmStatusBarCheck = new QCheckBox("Show current fan RPM in status bar", statusBarGroup);
+    m_showRpmStatusBarCheck->setChecked(true);
+    m_showRpmStatusBarCheck->setCursor(Qt::PointingHandCursor);
+    statusBarLayout->addWidget(m_showRpmStatusBarCheck);
+    settingsLayout->addWidget(statusBarGroup);
+
+    // Group 3: Polling & Telemetry
+    QGroupBox *pollingGroup = new QGroupBox("POLLING & TELEMETRY", m_settingsWidget);
+    QFormLayout *pollingLayout = new QFormLayout(pollingGroup);
+    pollingLayout->setSpacing(10);
+    
+    m_pollIntervalSpin = new QSpinBox(pollingGroup);
+    m_pollIntervalSpin->setRange(500, 10000);
+    m_pollIntervalSpin->setSingleStep(500);
+    m_pollIntervalSpin->setValue(2000);
+    m_pollIntervalSpin->setSuffix(" ms");
+    pollingLayout->addRow("Sensor Poll Interval:", m_pollIntervalSpin);
+    settingsLayout->addWidget(pollingGroup);
+
+    // Group 4: About
+    QGroupBox *aboutGroup = new QGroupBox("ABOUT", m_settingsWidget);
+    QVBoxLayout *aboutLayout = new QVBoxLayout(aboutGroup);
+    aboutLayout->setSpacing(6);
+    
+    QLabel *aboutTitle = new QLabel("pankha Fan Control App", aboutGroup);
+    aboutTitle->setStyleSheet("font-weight: bold; font-size: 14px;");
+    QLabel *aboutVersion = new QLabel("Version 1.0.0", aboutGroup);
+    QLabel *aboutAuthor = new QLabel("Developer: itznan", aboutGroup);
+    QLabel *aboutEngine = new QLabel("Backend: LibreHardwareMonitor Service", aboutGroup);
+    aboutLayout->addWidget(aboutTitle);
+    aboutLayout->addWidget(aboutVersion);
+    aboutLayout->addWidget(aboutAuthor);
+    aboutLayout->addWidget(aboutEngine);
+    settingsLayout->addWidget(aboutGroup);
+
+    settingsLayout->addStretch(1); // Keep settings aligned to top
+
+    m_settingsScrollArea->setWidget(m_settingsWidget);
+    rightLayout->addWidget(m_settingsScrollArea, 1);
+    m_settingsScrollArea->setVisible(false); // Hide by default
 
     mainLayout->addWidget(m_rightPane, 1);
 
@@ -418,11 +526,23 @@ void MainWindow::setupConnections()
     // Timers
     connect(m_pollTimer, &QTimer::timeout, this, &MainWindow::onPollTimerTick);
     connect(m_clockTimer, &QTimer::timeout, this, &MainWindow::onClockTimerTick);
+
+    // Theme connection
+    connect(m_themeComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::onThemeChanged);
+
+    // Settings connection
+    connect(m_settingsButton, &QPushButton::clicked, this, &MainWindow::onSettingsClicked);
+    connect(m_pollIntervalSpin, qOverload<int>(&QSpinBox::valueChanged), this, &MainWindow::onPollIntervalChanged);
 }
 
 void MainWindow::loadStylesheet()
 {
-    QFile file(":/styles.qss");
+    QString themeName = "light";
+    if (m_themeComboBox) {
+        themeName = (m_themeComboBox->currentIndex() == 1) ? "dark" : "light";
+    }
+
+    QFile file(QString(":/styles_%1.qss").arg(themeName));
     if (file.open(QFile::ReadOnly | QFile::Text)) {
         qApp->setStyleSheet(file.readAll());
         file.close();
@@ -523,7 +643,11 @@ void MainWindow::onScanResponse(const QJsonArray &fans)
     }
 
     // Re-select previously selected fan if it still exists
-    if (!m_selectedFanId.isEmpty() && m_fanCards.contains(m_selectedFanId)) {
+    if (m_settingsScrollArea->isVisible()) {
+        // Keep settings page open
+        m_selectedFanId = "";
+        m_selectedControlId = "";
+    } else if (!m_selectedFanId.isEmpty() && m_fanCards.contains(m_selectedFanId)) {
         m_fanCards[m_selectedFanId]->setSelectedState(true);
         showDetailsPanel();
         updateUIWithSelectedFan(true);
@@ -533,9 +657,9 @@ void MainWindow::onScanResponse(const QJsonArray &fans)
         showEmptyState("Select a fan from the list\nto monitor and configure controls.");
     }
 
-    // Start live 2-second updates
+    // Start live updates based on poll interval setting
     setConnectionStatus("Online", "#10B981");
-    m_pollTimer->start(2000);
+    m_pollTimer->start(m_pollInterval);
 }
 
 void MainWindow::onFanCardClicked(const QString &fanId)
@@ -605,19 +729,23 @@ void MainWindow::showEmptyState(const QString &message)
 {
     m_emptyStateLabel->setText(message);
     m_emptyStateWidget->setVisible(true);
-    m_detailWidget->setVisible(false);
+    m_detailScrollArea->setVisible(false);
+    m_settingsScrollArea->setVisible(false);
 }
 
 void MainWindow::showDetailsPanel()
 {
     m_emptyStateWidget->setVisible(false);
-    m_detailWidget->setVisible(true);
+    m_detailScrollArea->setVisible(true);
+    m_settingsScrollArea->setVisible(false);
 }
 
 void MainWindow::updateUIWithSelectedFan(bool fullRefresh)
 {
     if (m_selectedFanId.isEmpty()) {
-        showEmptyState("Select a fan from the list\nto monitor and configure controls.");
+        if (!m_settingsScrollArea->isVisible()) {
+            showEmptyState("Select a fan from the list\nto monitor and configure controls.");
+        }
         return;
     }
 
@@ -911,6 +1039,35 @@ void MainWindow::onAdvancedToggleClicked(const QString &link)
     } else {
         m_advancedPanel->setVisible(true);
         m_advancedLink->setText("<a href=\"toggle\" style=\"text-decoration:none; color:#3b82f6; font-size:11px;\">▾ Hide advanced options</a>");
+    }
+}
+
+void MainWindow::onThemeChanged(int index)
+{
+    Q_UNUSED(index);
+    loadStylesheet();
+}
+
+void MainWindow::onSettingsClicked()
+{
+    // Deselect any active fan card
+    if (!m_selectedFanId.isEmpty() && m_fanCards.contains(m_selectedFanId)) {
+        m_fanCards[m_selectedFanId]->setSelectedState(false);
+    }
+    m_selectedFanId = "";
+    m_selectedControlId = "";
+
+    // Show settings, hide detail scroll area and empty state
+    m_emptyStateWidget->setVisible(false);
+    m_detailScrollArea->setVisible(false);
+    m_settingsScrollArea->setVisible(true);
+}
+
+void MainWindow::onPollIntervalChanged(int value)
+{
+    m_pollInterval = value;
+    if (m_pollTimer->isActive()) {
+        m_pollTimer->start(m_pollInterval);
     }
 }
 

@@ -16,6 +16,7 @@
 #include <QElapsedTimer>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QComboBox>
 #include "FanApiClient.h"
 #include "BackendLauncher.h"
 
@@ -55,6 +56,9 @@ private slots:
     void onResetAutoClicked();
     void onResetAutoExitToggled(bool checked);
     void onAdvancedToggleClicked(const QString &link);
+    void onThemeChanged(int index);
+    void onSettingsClicked();
+    void onPollIntervalChanged(int value);
     
     // Timer handlers
     void onPollTimerTick();
@@ -80,12 +84,14 @@ private:
     QVBoxLayout *m_listLayout;
     QPushButton *m_rescanButton;
     QLabel *m_connectionStatusLabel;
+    QPushButton *m_settingsButton;
 
     // Right Pane (Details)
     QFrame *m_rightPane;
     QWidget *m_emptyStateWidget;
     QLabel *m_emptyStateLabel;
 
+    QScrollArea *m_detailScrollArea;
     QWidget *m_detailWidget;
     QLabel *m_detailNameLabel;
     QLabel *m_detailHardwareLabel;
@@ -116,6 +122,13 @@ private:
     // Status bar labels
     QLabel *m_statusLeftLabel;
     QLabel *m_statusRightLabel;
+
+    // Global Settings Page
+    QScrollArea *m_settingsScrollArea;
+    QWidget *m_settingsWidget;
+    QComboBox *m_themeComboBox;
+    QSpinBox *m_pollIntervalSpin;
+    int m_pollInterval;
 
     // Controllers
     BackendLauncher *m_backendLauncher;

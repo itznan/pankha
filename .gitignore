@@ -20,7 +20,8 @@ Dist/
 Dist/**
 
 dist/
-installer/
+installer/*
+!installer/setup.iss
 # Visual Studio / MSBuild
 *.user
 *.suo
@@ -100,4 +101,8 @@ Makefile
 *.swo
 *.tmp
 
+# Documentation folder (local debug/info)
+docs/
+
 # End of .gitignore
+

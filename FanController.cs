@@ -199,6 +199,36 @@ public class FanController : IDisposable
             {
                 sensor.Control.SetDefault();
                 _skipResetOnExitControls.Remove(controlId);
+
+                // Store the manual speeds of other fans that are still in manual mode
+                var otherManualControls = new Dictionary<string, float>();
+                foreach (var pair in _controlSensors)
+                {
+                    if (pair.Key != controlId && pair.Value.Control != null && pair.Value.Control.ControlMode == ControlMode.Software)
+                    {
+                        otherManualControls[pair.Key] = pair.Value.Value ?? 0;
+                    }
+                }
+
+                // Close the computer to completely release LPC/I/O locks and restore true BIOS auto curve settings
+                _computer.Close();
+
+                // Wait 1.5 seconds to allow motherboard BIOS SMM to reclaim control and write current temp-based speeds
+                System.Threading.Thread.Sleep(1500);
+
+                // Reopen the computer to continue monitoring
+                _computer.Open();
+
+                // Re-fetch sensors and restore manual speeds for other fans
+                GetControls();
+                foreach (var pair in otherManualControls)
+                {
+                    if (_controlSensors.TryGetValue(pair.Key, out var otherSensor))
+                    {
+                        otherSensor.Control?.SetSoftware(pair.Value);
+                    }
+                }
+
                 return true;
             }
         }
