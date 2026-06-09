@@ -17,10 +17,11 @@ FanCardWidget::FanCardWidget(const QJsonObject &fan, QWidget *parent)
     m_fanId = fan["Id"].toString();
 
     QVBoxLayout *layout = new QVBoxLayout(this);
-    layout->setContentsMargins(12, 12, 12, 12);
+    layout->setContentsMargins(14, 12, 14, 12);
     layout->setSpacing(6);
 
     QHBoxLayout *topRow = new QHBoxLayout();
+    topRow->setSpacing(8);
     m_nameLabel = new QLabel(fan["Name"].toString(), this);
     m_nameLabel->setObjectName("fanCardName");
     topRow->addWidget(m_nameLabel);
@@ -31,6 +32,7 @@ FanCardWidget::FanCardWidget(const QJsonObject &fan, QWidget *parent)
     layout->addLayout(topRow);
 
     QHBoxLayout *midRow = new QHBoxLayout();
+    midRow->setSpacing(8);
     m_hardwareLabel = new QLabel(fan["HardwareName"].toString(), this);
     m_hardwareLabel->setObjectName("fanCardHardware");
     midRow->addWidget(m_hardwareLabel);
@@ -56,7 +58,6 @@ void FanCardWidget::updateData(const QJsonObject &fan)
     int rpm = fan["Rpm"].toDouble();
     int minRpm = fan["Min"].toDouble();
     int maxRpm = fan["Max"].toDouble();
-    int currentDuty = fan["SpeedPercent"].toDouble();
 
     m_rpmLabel->setText(QString("%1 RPM").arg(rpm));
 
@@ -67,7 +68,6 @@ void FanCardWidget::updateData(const QJsonObject &fan)
         progressVal = qBound(0, rpm * 100 / 3000, 100);
     }
 
-    // Smoothly animate the card progress bar value
     QPropertyAnimation *progressAnim = new QPropertyAnimation(m_progressBar, "value", this);
     progressAnim->setDuration(400);
     progressAnim->setStartValue(m_progressBar->value());
@@ -75,7 +75,6 @@ void FanCardWidget::updateData(const QJsonObject &fan)
     progressAnim->setEasingCurve(QEasingCurve::OutQuad);
     progressAnim->start(QAbstractAnimation::DeleteWhenStopped);
 
-    // Update badge mode
     QString mode = fan["Mode"].toString().toLower();
     QString controlId = fan["ControlId"].toString();
     if (controlId.isEmpty()) {
@@ -89,7 +88,6 @@ void FanCardWidget::updateData(const QJsonObject &fan)
         m_modeBadge->setObjectName("badgeAuto");
     }
 
-    // Refresh styling since objectName might have changed
     m_modeBadge->style()->unpolish(m_modeBadge);
     m_modeBadge->style()->polish(m_modeBadge);
 }

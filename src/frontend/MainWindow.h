@@ -24,7 +24,6 @@
 #include "FanApiClient.h"
 #include "BackendLauncher.h"
 
-// Forward declarations
 class FanCardWidget;
 
 class MainWindow : public QMainWindow
@@ -42,23 +41,22 @@ protected:
     void mouseReleaseEvent(QMouseEvent *event) override;
 
 private slots:
-    // API Callbacks
     void onScanResponse(const QJsonArray &fans);
     void onPollResponse(const QJsonArray &fans);
     void onControlApplied(const QString &id, bool success);
+    void onControlReset(const QString &id, bool success);
     void onApiError(const QString &message);
 
-    // Backend launcher callbacks
     void onBackendStarted();
     void onBackendError(const QString &message);
 
-    // UI Trigger actions
     void onRescanClicked();
     void onFanCardClicked(const QString &fanId);
     void onManualOverrideToggled(bool checked);
     void onSliderValueChanged(int value);
     void onSpinBoxValueChanged(int value);
     void onApplyClicked();
+    void onResetToAutoClicked();
     void onAdvancedToggleClicked(const QString &link);
     void onThemeChanged(int index);
     void onSettingsClicked();
@@ -68,8 +66,7 @@ private slots:
     void onTrayIconActivated(QSystemTrayIcon::ActivationReason reason);
     void onQuitActionTriggered();
     void showNormalAndActivate();
-    
-    // Timer handlers
+
     void onPollTimerTick();
     void onClockTimerTick();
     void updateStatusBar();
@@ -89,8 +86,8 @@ private:
 
     // UI Structure
     QWidget *m_centralWidget;
-    
-    // Left Pane (List)
+
+    // Left Pane
     QFrame *m_leftPane;
     QScrollArea *m_scrollArea;
     QWidget *m_listContainer;
@@ -99,7 +96,7 @@ private:
     QLabel *m_connectionStatusLabel;
     QPushButton *m_settingsButton;
 
-    // Right Pane (Details)
+    // Right Pane
     QFrame *m_rightPane;
     QWidget *m_emptyStateWidget;
     QLabel *m_emptyStateLabel;
@@ -108,7 +105,7 @@ private:
     QWidget *m_detailWidget;
     QLabel *m_detailNameLabel;
     QLabel *m_detailHardwareLabel;
-    
+
     QLabel *m_rpmValueLabel;
     QLabel *m_dutyValueLabel;
     QProgressBar *m_progressBar;
@@ -116,11 +113,6 @@ private:
     QCheckBox *m_manualOverrideCheck;
     QSlider *m_targetSpeedSlider;
     QSpinBox *m_targetSpeedSpin;
-    
-    QCheckBox *m_showRpmStatusBarCheck;
-    QCheckBox *m_minimizeToTrayCheck;
-    QCheckBox *m_startOnBootCheck;
-
     QLabel *m_targetSpeedLabel;
 
     QLabel *m_advancedLink;
@@ -131,13 +123,19 @@ private:
     QLineEdit *m_controlIdEdit;
 
     QPushButton *m_applyButton;
+    QPushButton *m_resetButton;
 
-    // Status bar labels
+    // Settings
+    QCheckBox *m_showRpmStatusBarCheck;
+    QCheckBox *m_minimizeToTrayCheck;
+    QCheckBox *m_startOnBootCheck;
+
+    // Status bar
     QLabel *m_statusLeftLabel;
     QLabel *m_statusRightLabel;
     QSystemTrayIcon *m_trayIcon;
 
-    // Global Settings Page
+    // Settings Page
     QScrollArea *m_settingsScrollArea;
     QWidget *m_settingsWidget;
     QComboBox *m_themeComboBox;
@@ -158,8 +156,6 @@ private:
     QString m_selectedControlId;
     bool m_isScanning;
     int m_consecutiveErrors;
-    // True when the user has toggled manual override locally but hasn't applied yet.
-    // Prevents the background poll from overwriting the checkbox state.
     bool m_pendingManualChange;
     bool m_forceClose;
 
@@ -167,7 +163,5 @@ private:
     bool m_dragActive;
     QPoint m_dragPosition;
 };
-
-
 
 #endif // MAINWINDOW_H
