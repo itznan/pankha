@@ -106,3 +106,4 @@ docs/
 
 # End of .gitignore
 
+.env
