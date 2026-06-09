@@ -50,7 +50,28 @@ if ($LASTEXITCODE -ne 0) {
 
 # 2. Build Qt C++ Frontend
 Write-Host "`n[2/4] Building Qt C++ Frontend..." -ForegroundColor Yellow
-$env:PATH = "C:\msys64\clang64\bin;" + $env:PATH
+
+# Dynamically find MSYS2 installation path
+$msys2Path = $env:MSYS2_PATH
+if ([string]::IsNullOrEmpty($msys2Path)) {
+    $candidates = @(
+        "C:\msys64",
+        "D:\a\_temp\msys64"
+    )
+    foreach ($candidate in $candidates) {
+        if (Test-Path "$candidate\clang64") {
+            $msys2Path = $candidate
+            break
+        }
+    }
+}
+if ([string]::IsNullOrEmpty($msys2Path)) {
+    $msys2Path = "C:\msys64"
+}
+$msys2ClangPath = "$msys2Path\clang64"
+Write-Host "Using MSYS2 Clang64 path: $msys2ClangPath" -ForegroundColor Gray
+
+$env:PATH = "$msys2ClangPath\bin;" + $env:PATH
 
 # Clean mismatched CMake Cache if it exists to avoid directory mismatch errors
 if (Test-Path "build\CMakeCache.txt") {
@@ -58,7 +79,7 @@ if (Test-Path "build\CMakeCache.txt") {
     Remove-Item -Path "build\CMakeCache.txt" -Force -ErrorAction SilentlyContinue
 }
 
-cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=C:/msys64/clang64 -DCMAKE_C_COMPILER=C:/msys64/clang64/bin/clang.exe -DCMAKE_CXX_COMPILER=C:/msys64/clang64/bin/clang++.exe
+cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$msys2ClangPath" -DCMAKE_C_COMPILER="$msys2ClangPath/bin/clang.exe" -DCMAKE_CXX_COMPILER="$msys2ClangPath/bin/clang++.exe"
 cmake --build build --config Release
 
 if ($LASTEXITCODE -ne 0) {
@@ -81,7 +102,7 @@ Write-Host "Resolving MSYS2 runtime dependencies recursively..." -ForegroundColo
 $scriptRoot = $PSScriptRoot
 if ([string]::IsNullOrEmpty($scriptRoot)) { $scriptRoot = $pwd.Path }
 $distDir = Join-Path $scriptRoot "dist"
-$msys2Bin = "C:\msys64\clang64\bin"
+$msys2Bin = "$msys2ClangPath\bin"
 $objdump = "$msys2Bin\objdump.exe"
 
 $queue = New-Object System.Collections.Queue

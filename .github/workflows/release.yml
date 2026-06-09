@@ -28,6 +28,7 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Setup MSYS2
+        id: msys2
         uses: msys2/setup-msys2@v2
         with:
           msystem: CLANG64
@@ -43,50 +44,79 @@ jobs:
       - name: Install Inno Setup
         run: choco install innosetup -y
 
-      - name: Run Build Script
+      - name: Build C# Backend
+        run: dotnet publish src/backend/FanControlApp.csproj -c Release -r win-x64 --self-contained true
+
+      - name: Build Qt C++ Frontend
         shell: pwsh
         run: |
-          ./build.ps1 > build.log 2>&1
-          $exitCode = $LASTEXITCODE
-          if ($exitCode -ne 0) {
-            Write-Error "Build script failed with exit code $exitCode"
-            exit 1
+          $msys2ClangPath = "${{ steps.msys2.outputs.msys2-location }}/clang64"
+          $env:PATH = "$msys2ClangPath/bin;" + $env:PATH
+          cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$msys2ClangPath" -DCMAKE_C_COMPILER="$msys2ClangPath/bin/clang.exe" -DCMAKE_CXX_COMPILER="$msys2ClangPath/bin/clang++.exe"
+          cmake --build build --config Release
+
+      - name: Deploy Dependencies
+        shell: pwsh
+        run: |
+          $msys2ClangPath = "${{ steps.msys2.outputs.msys2-location }}/clang64"
+          $env:PATH = "$msys2ClangPath/bin;" + $env:PATH
+          
+          if (Test-Path dist) {
+            Remove-Item -Path "dist\*" -Recurse -Force -ErrorAction SilentlyContinue
+          }
+          New-Item -ItemType Directory -Path "dist" -Force | Out-Null
+          
+          Copy-Item -Path "build\FanControlHost.exe" -Destination "dist\" -Force
+          Copy-Item -Path "src\backend\bin\Release\net8.0\win-x64\publish\*" -Destination "dist\" -Force
+          
+          windeployqt.exe --release --no-translations --compiler-runtime dist\FanControlHost.exe
+          
+          # Resolving MSYS2 runtime dependencies recursively
+          $distDir = Join-Path $pwd.Path "dist"
+          $msys2Bin = "$msys2ClangPath\bin"
+          $objdump = "$msys2Bin\objdump.exe"
+          
+          $queue = New-Object System.Collections.Queue
+          Get-ChildItem -Path $distDir -Recurse | Where-Object { $_.Extension -eq ".exe" -or $_.Extension -eq ".dll" } | ForEach-Object {
+              $queue.Enqueue($_.FullName)
+          }
+          
+          $processed = New-Object System.Collections.Generic.HashSet[string]
+          
+          while ($queue.Count -gt 0) {
+              $file = $queue.Dequeue()
+              if ($processed.Contains($file)) { continue }
+              $processed.Add($file) | Out-Null
+          
+              if (Test-Path $file) {
+                  $imports = & $objdump -p $file 2>$null | Where-Object { $_ -match "DLL Name: ([^\s]+\.dll)" }
+                  foreach ($line in $imports) {
+                      if ($line -match "DLL Name: ([^\s]+\.dll)") {
+                          $dllName = $Matches[1]
+                          $sourcePath = "$msys2Bin\$dllName"
+                          $destPath = "$distDir\$dllName"
+          
+                          if (Test-Path $sourcePath) {
+                              if (!(Test-Path $destPath)) {
+                                  Write-Host "Auto-deploying dependency: $dllName"
+                                  Copy-Item $sourcePath -Destination $distDir -Force
+                                  $queue.Enqueue($destPath)
+                              }
+                          }
+                      }
+                  }
+              }
           }
 
-      - name: Upload Build Logs via API
-        if: always()
+      - name: Build Installer
         shell: pwsh
         run: |
-          if (Test-Path build.log) {
-            Write-Host "Uploading build.log via GitHub API..."
-            $content = [Convert]::ToBase64String([System.IO.File]::ReadAllBytes("build.log"))
-            $sha = $null
-            try {
-              $existing = Invoke-RestMethod -Uri "https://api.github.com/repos/itznan/pankha/contents/build.log" -Method Get -Headers @{
-                Authorization = "token ${{ secrets.GITHUB_TOKEN }}"
-                "User-Agent" = "PowerShell"
-              }
-              $sha = $existing.sha
-            } catch {
-              # File doesn't exist
-            }
-            
-            $body = @{
-              message = "chore: upload build.log [skip ci]"
-              content = $content
-              branch = "main"
-            }
-            if ($sha) {
-              $body.sha = $sha
-            }
-            $bodyJson = $body | ConvertTo-Json -Compress
-            
-            Invoke-RestMethod -Uri "https://api.github.com/repos/itznan/pankha/contents/build.log" -Method Put -Headers @{
-              Authorization = "token ${{ secrets.GITHUB_TOKEN }}"
-              "Content-Type" = "application/json"
-              "User-Agent" = "PowerShell"
-            } -Body $bodyJson
-            Write-Host "Log uploaded successfully."
+          $isccPath = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (Test-Path $isccPath) {
+              & $isccPath installer\setup.iss
+          } else {
+              Write-Error "Inno Setup compiler not found!"
+              exit 1
           }
 
       - name: Upload Installer Artifact
