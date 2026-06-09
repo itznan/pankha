@@ -53,16 +53,40 @@ jobs:
             exit 1
           }
 
-      - name: Commit and Push Build Logs
+      - name: Upload Build Logs via API
         if: always()
         shell: pwsh
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if (Test-Path build.log) {
-            git add build.log
-            git commit -m "chore: upload build logs [skip ci]"
-            git push origin main
+            Write-Host "Uploading build.log via GitHub API..."
+            $content = [Convert]::ToBase64String([System.IO.File]::ReadAllBytes("build.log"))
+            $sha = $null
+            try {
+              $existing = Invoke-RestMethod -Uri "https://api.github.com/repos/itznan/pankha/contents/build.log" -Method Get -Headers @{
+                Authorization = "token ${{ secrets.GITHUB_TOKEN }}"
+                "User-Agent" = "PowerShell"
+              }
+              $sha = $existing.sha
+            } catch {
+              # File doesn't exist
+            }
+            
+            $body = @{
+              message = "chore: upload build.log [skip ci]"
+              content = $content
+              branch = "main"
+            }
+            if ($sha) {
+              $body.sha = $sha
+            }
+            $bodyJson = $body | ConvertTo-Json -Compress
+            
+            Invoke-RestMethod -Uri "https://api.github.com/repos/itznan/pankha/contents/build.log" -Method Put -Headers @{
+              Authorization = "token ${{ secrets.GITHUB_TOKEN }}"
+              "Content-Type" = "application/json"
+              "User-Agent" = "PowerShell"
+            } -Body $bodyJson
+            Write-Host "Log uploaded successfully."
           }
 
       - name: Upload Installer Artifact
