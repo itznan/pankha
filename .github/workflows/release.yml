@@ -120,6 +120,38 @@ jobs:
               exit 1
           }
 
+      - name: Sign Installer
+        if: ${{ env.SIGN_CERT_PFX != '' }}
+        shell: pwsh
+        env:
+          SIGN_CERT_PFX: ${{ secrets.SIGN_CERT_PFX }}
+          SIGN_CERT_PASSWORD: ${{ secrets.SIGN_CERT_PASSWORD }}
+        run: |
+          # Decode the PFX certificate from base64 secret
+          $pfxPath = Join-Path $env:RUNNER_TEMP "code_sign.pfx"
+          [IO.File]::WriteAllBytes($pfxPath, [Convert]::FromBase64String($env:SIGN_CERT_PFX))
+          
+          # Find signtool.exe
+          $signtool = Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits" -Recurse -Filter "signtool.exe" -ErrorAction SilentlyContinue | 
+                      Where-Object { $_.FullName -match "x64" } | 
+                      Select-Object -First 1 -ExpandProperty FullName
+          
+          if (-not $signtool) {
+              Write-Warning "signtool.exe not found, skipping signing"
+              exit 0
+          }
+          
+          Write-Host "Signing installer with signtool: $signtool"
+          
+          # Sign the installer
+          & $signtool sign /f $pfxPath /p $env:SIGN_CERT_PASSWORD /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 /d "pankha - Fan Control" installer\pankha_installer.exe
+          
+          # Verify the signature
+          & $signtool verify /pa installer\pankha_installer.exe
+          
+          # Clean up
+          Remove-Item $pfxPath -Force
+
       - name: Upload Installer Artifact
         uses: actions/upload-artifact@v6
         with:
