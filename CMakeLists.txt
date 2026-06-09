@@ -15,6 +15,9 @@ find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network)
 set(SOURCES
     src/frontend/main.cpp
     src/frontend/MainWindow.cpp
+    src/frontend/MainWindow_UI.cpp
+    src/frontend/MainWindow_Slots.cpp
+    src/frontend/MainWindow_Settings.cpp
     src/frontend/MainWindow.h
     src/frontend/FanApiClient.cpp
     src/frontend/FanApiClient.h

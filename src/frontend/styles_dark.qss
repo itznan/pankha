@@ -512,36 +512,6 @@ QPushButton#applyButton:disabled {
     border-bottom: 1px solid #3a3a3c;
 }
 
-/* Reset to Auto Button */
-QPushButton#resetButton {
-    background: #3a3a3c;
-    border: 1px solid #48484a;
-    border-bottom: 2px solid #555558;
-    border-radius: 7px;
-    color: #ff453a;
-    font-weight: 500;
-    padding: 6px 16px;
-    min-height: 30px;
-}
-
-QPushButton#resetButton:hover {
-    background-color: #48484a;
-    border-color: #ff453a;
-    color: #ff6961;
-}
-
-QPushButton#resetButton:pressed {
-    background-color: #545456;
-    border-bottom: 1px solid #555558;
-    padding-top: 7px;
-}
-
-QPushButton#resetButton:disabled {
-    background-color: #2c2c2e;
-    border-color: #3a3a3c;
-    border-bottom: 1px solid #3a3a3c;
-    color: #48484a;
-}
 
 /* Rescan / Settings Buttons */
 QPushButton#rescanButton {

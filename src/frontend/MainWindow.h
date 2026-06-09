@@ -56,7 +56,6 @@ private slots:
     void onSliderValueChanged(int value);
     void onSpinBoxValueChanged(int value);
     void onApplyClicked();
-    void onResetToAutoClicked();
     void onAdvancedToggleClicked(const QString &link);
     void onThemeChanged(int index);
     void onSettingsClicked();
@@ -123,7 +122,6 @@ private:
     QLineEdit *m_controlIdEdit;
 
     QPushButton *m_applyButton;
-    QPushButton *m_resetButton;
 
     // Settings
     QCheckBox *m_showRpmStatusBarCheck;
