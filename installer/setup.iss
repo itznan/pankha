@@ -4,7 +4,6 @@
 #define MyAppName "pankha"
 #define MyAppVersion "1.0.1"
 #define MyAppPublisher "itznan"
-#define MyAppURL "https://github.com/itznan/pankha"
 #define MyAppExeName "FanControlHost.exe"
 
 [Setup]
@@ -12,9 +11,6 @@ AppId={{5D0B16D1-C4B2-4E57-BD46-6DC456C6C75F}}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
-AppPublisherURL={#MyAppURL}
-AppSupportURL={#MyAppURL}/issues
-AppUpdatesURL={#MyAppURL}/releases
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
