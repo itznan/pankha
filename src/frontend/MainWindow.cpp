@@ -3,6 +3,7 @@
 #include <QMouseEvent>
 #include <QGraphicsOpacityEffect>
 #include <QPropertyAnimation>
+#include <QApplication>
 
 MainWindow::MainWindow(bool startMinimized, QWidget *parent)
     : QMainWindow(parent)
@@ -45,6 +46,8 @@ void MainWindow::closeEvent(QCloseEvent *event)
         m_trayIcon->hide();
         m_backendLauncher->stop();
         event->accept();
+        // Ensure the application fully exits after the window closes
+        QApplication::quit();
     }
 }
 
@@ -114,7 +117,11 @@ void MainWindow::onTrayIconActivated(QSystemTrayIcon::ActivationReason reason)
 void MainWindow::onQuitActionTriggered()
 {
     m_forceClose = true;
-    close();
+    m_pollTimer->stop();
+    m_clockTimer->stop();
+    m_trayIcon->hide();
+    m_backendLauncher->stop();
+    QApplication::quit();
 }
 
 void MainWindow::showNormalAndActivate()

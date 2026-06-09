@@ -30,6 +30,8 @@ private:
     bool m_isShuttingDown;
     int m_retryCount;
     const int m_maxRetries = 3;
+
+    void killAllBackendProcesses();
 };
 
 #endif // BACKENDLAUNCHER_H

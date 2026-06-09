@@ -85,6 +85,8 @@ void BackendLauncher::start()
 void BackendLauncher::stop()
 {
     m_isShuttingDown = true;
+
+    // First, try graceful shutdown of our managed process
     if (m_process && m_process->state() != QProcess::NotRunning) {
         // Close standard input to trigger clean C# backend exit
         m_process->closeWriteChannel();
@@ -95,6 +97,34 @@ void BackendLauncher::stop()
             m_process->waitForFinished(1000);
         }
     }
+
+    // Then, kill ANY remaining FanControlBackend.exe processes by name
+    // This handles orphaned processes or pre-existing instances
+    killAllBackendProcesses();
+}
+
+void BackendLauncher::killAllBackendProcesses()
+{
+    HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (snapshot == INVALID_HANDLE_VALUE) return;
+
+    PROCESSENTRY32W entry;
+    entry.dwSize = sizeof(entry);
+
+    if (Process32FirstW(snapshot, &entry)) {
+        do {
+            QString name = QString::fromWCharArray(entry.szExeFile);
+            if (name.compare("FanControlBackend.exe", Qt::CaseInsensitive) == 0) {
+                HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, entry.th32ProcessID);
+                if (hProcess) {
+                    qDebug() << "Terminating orphan backend process PID:" << entry.th32ProcessID;
+                    TerminateProcess(hProcess, 0);
+                    CloseHandle(hProcess);
+                }
+            }
+        } while (Process32NextW(snapshot, &entry));
+    }
+    CloseHandle(snapshot);
 }
 
 void BackendLauncher::handleFinished(int exitCode, QProcess::ExitStatus exitStatus)

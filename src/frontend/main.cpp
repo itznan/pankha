@@ -6,6 +6,7 @@ int main(int argc, char *argv[])
 {
     // High DPI scaling is enabled by default in Qt 6
     QApplication a(argc, argv);
+    a.setQuitOnLastWindowClosed(false);
     a.setWindowIcon(QIcon(":/images/logo.png"));
 
     bool startMinimized = false;
