@@ -10,9 +10,10 @@
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-    <Version>2.1.1</Version>
+    <Version>2.1.1-beta</Version>
     <AssemblyVersion>2.1.1.0</AssemblyVersion>
     <FileVersion>2.1.1.0</FileVersion>
+    <InformationalVersion>2.1.1-beta</InformationalVersion>
     <Company>itznan</Company>
     <Authors>itznan</Authors>
   </PropertyGroup>

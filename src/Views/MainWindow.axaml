@@ -122,7 +122,7 @@
                                     <TextBlock Text="PANKHA" FontSize="16" FontWeight="Black" Foreground="{DynamicResource MainText}" LetterSpacing="1.0" VerticalAlignment="Center"/>
                                 </StackPanel>
                                 <Border Grid.Column="1" Background="{DynamicResource CardBackground}" BorderBrush="#25ffffff" BorderThickness="1" CornerRadius="4" Padding="4,2" Margin="8,0,0,0" VerticalAlignment="Center">
-                                    <TextBlock Text="v2.1.1" FontSize="9" FontWeight="SemiBold" Foreground="#98989d"/>
+                                    <TextBlock Text="v2.1.1-beta" FontSize="9" FontWeight="SemiBold" Foreground="#98989d"/>
                                 </Border>
                                 <TextBlock Grid.Column="2" Text="by itznan" FontSize="10" Foreground="{DynamicResource SubText}" Margin="10,0,0,0" VerticalAlignment="Center"/>
                             </Grid>

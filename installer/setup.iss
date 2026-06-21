@@ -2,7 +2,7 @@
 ; Defines how the single-file installer is compiled.
 
 #define MyAppName "pankha"
-#define MyAppVersion "2.1.1"
+#define MyAppVersion "2.1.1-beta"
 #define MyAppPublisher "itznan"
 #define MyAppExeName "FanControlHost.exe"
 
