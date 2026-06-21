@@ -25,6 +25,10 @@
   <em>Pankha (পাখা / पंখা) — Bengali/Hindi word for "Fan"</em>
 </p>
 
+<p align="center">
+  <img src="screenshot/screenshot.png" alt="Pankha Screenshot" width="700" />
+</p>
+
 ---
 
 ## ✨ Features
