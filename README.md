@@ -12,9 +12,6 @@
   <a href="https://github.com/itznan/pankha/actions/workflows/release.yml">
     <img src="https://github.com/itznan/pankha/actions/workflows/release.yml/badge.svg" alt="Build Status" />
   </a>
-  <a href="https://github.com/itznan/pankha/releases/latest">
-    <img src="https://img.shields.io/github/v/release/itznan/pankha?color=%2310B981&label=latest" alt="Latest Release" />
-  </a>
   <img src="https://img.shields.io/badge/platform-Windows%2010%2F11-blue" alt="Platform" />
   <img src="https://img.shields.io/badge/architecture-x64-orange" alt="Architecture" />
   <img src="https://img.shields.io/badge/framework-Avalonia%20UI-blueviolet" alt="Framework" />
