@@ -25,88 +25,23 @@ jobs:
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: '8.0.x'
-
-      - name: Setup MSYS2
-        id: msys2
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: CLANG64
-          update: true
-          install: >-
-            mingw-w64-clang-x86_64-clang
-            mingw-w64-clang-x86_64-lld
-            mingw-w64-clang-x86_64-cmake
-            mingw-w64-clang-x86_64-ninja
-            mingw-w64-clang-x86_64-qt6-base
-            mingw-w64-clang-x86_64-qt6-svg
+          dotnet-version: '10.0.x'
 
       - name: Install Inno Setup
         run: choco install innosetup -y
 
-      - name: Build C# Backend
-        run: dotnet publish src/backend/FanControlApp.csproj -c Release -r win-x64 --self-contained true
-
-      - name: Build Qt C++ Frontend
-        shell: pwsh
-        run: |
-          $msys2ClangPath = "${{ steps.msys2.outputs.msys2-location }}/clang64"
-          $env:PATH = "$msys2ClangPath/bin;" + $env:PATH
-          cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$msys2ClangPath" -DCMAKE_C_COMPILER="$msys2ClangPath/bin/clang.exe" -DCMAKE_CXX_COMPILER="$msys2ClangPath/bin/clang++.exe"
-          cmake --build build --config Release
+      - name: Build C# Frontend
+        run: dotnet publish src/pankha.csproj -c Release -r win-x64 --self-contained true
 
       - name: Deploy Dependencies
         shell: pwsh
         run: |
-          $msys2ClangPath = "${{ steps.msys2.outputs.msys2-location }}/clang64"
-          $env:PATH = "$msys2ClangPath/bin;" + $env:PATH
-          
           if (Test-Path dist) {
             Remove-Item -Path "dist\*" -Recurse -Force -ErrorAction SilentlyContinue
           }
           New-Item -ItemType Directory -Path "dist" -Force | Out-Null
           
-          Copy-Item -Path "build\FanControlHost.exe" -Destination "dist\" -Force
-          Copy-Item -Path "src\backend\bin\Release\net8.0\win-x64\publish\*" -Destination "dist\" -Force
-          
-          windeployqt.exe --release --no-translations --compiler-runtime dist\FanControlHost.exe
-          
-          # Resolving MSYS2 runtime dependencies recursively
-          $distDir = Join-Path $pwd.Path "dist"
-          $msys2Bin = "$msys2ClangPath\bin"
-          $objdump = "$msys2Bin\objdump.exe"
-          
-          $queue = New-Object System.Collections.Queue
-          Get-ChildItem -Path $distDir -Recurse | Where-Object { $_.Extension -eq ".exe" -or $_.Extension -eq ".dll" } | ForEach-Object {
-              $queue.Enqueue($_.FullName)
-          }
-          
-          $processed = New-Object System.Collections.Generic.HashSet[string]
-          
-          while ($queue.Count -gt 0) {
-              $file = $queue.Dequeue()
-              if ($processed.Contains($file)) { continue }
-              $processed.Add($file) | Out-Null
-          
-              if (Test-Path $file) {
-                  $imports = & $objdump -p $file 2>$null | Where-Object { $_ -match "DLL Name: ([^\s]+\.dll)" }
-                  foreach ($line in $imports) {
-                      if ($line -match "DLL Name: ([^\s]+\.dll)") {
-                          $dllName = $Matches[1]
-                          $sourcePath = "$msys2Bin\$dllName"
-                          $destPath = "$distDir\$dllName"
-          
-                          if (Test-Path $sourcePath) {
-                              if (!(Test-Path $destPath)) {
-                                  Write-Host "Auto-deploying dependency: $dllName"
-                                  Copy-Item $sourcePath -Destination $distDir -Force
-                                  $queue.Enqueue($destPath)
-                              }
-                          }
-                      }
-                  }
-              }
-          }
+          Copy-Item -Path "src\bin\Release\net10.0-windows\win-x64\publish\FanControlHost.exe" -Destination "dist\" -Force
 
       - name: Build Installer
         shell: pwsh
@@ -130,8 +65,8 @@ jobs:
         if: github.event_name == 'push'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('v1.0.{0}', github.run_number) }}
-          name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('Release v1.0.{0}', github.run_number) }}
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('v2.1.{0}', github.run_number) }}
+          name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('Release v2.1.{0}', github.run_number) }}
           body: |
             Automated build update.
             Commit: ${{ github.sha }}

@@ -1,0 +1,426 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:frontend_avalonia.ViewModels"
+        xmlns:local="using:frontend_avalonia.Components"
+        xmlns:conv="clr-namespace:Avalonia.Data.Converters;assembly=Avalonia.Base"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="960" d:DesignHeight="640"
+        Width="960" Height="640"
+        x:Class="frontend_avalonia.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/logo.png"
+        Title="Pankha – Fan Control"
+        WindowStartupLocation="CenterScreen"
+        CanResize="True"
+        Background="Transparent"
+        TransparencyLevelHint="Mica,AcrylicBlur"
+        Name="MainAppWindow">
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="SidebarButtonBg" Color="#10000000"/>
+                    <SolidColorBrush x:Key="SidebarButtonFg" Color="#1c1c1e"/>
+                    <SolidColorBrush x:Key="CardBackground" Color="#08000000"/>
+                    <SolidColorBrush x:Key="CardBackgroundHover" Color="#12000000"/>
+                    <SolidColorBrush x:Key="CardBorder" Color="#15000000"/>
+                    <SolidColorBrush x:Key="CardBorderHover" Color="#20000000"/>
+                    <SolidColorBrush x:Key="HeaderedBg" Color="#05000000"/>
+                    <SolidColorBrush x:Key="MainText" Color="#1c1c1e"/>
+                    <SolidColorBrush x:Key="SubText" Color="#68686e"/>
+                    <SolidColorBrush x:Key="OverlayBackground" Color="#ccffffff"/>
+                    <SolidColorBrush x:Key="ModalBackground" Color="#ffffff"/>
+                    <SolidColorBrush x:Key="ModalBorder" Color="#15000000"/>
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Dark">
+                    <SolidColorBrush x:Key="SidebarButtonBg" Color="#15ffffff"/>
+                    <SolidColorBrush x:Key="SidebarButtonFg" Color="#f5f5f7"/>
+                    <SolidColorBrush x:Key="CardBackground" Color="#15ffffff"/>
+                    <SolidColorBrush x:Key="CardBackgroundHover" Color="#25ffffff"/>
+                    <SolidColorBrush x:Key="CardBorder" Color="#10ffffff"/>
+                    <SolidColorBrush x:Key="CardBorderHover" Color="#25ffffff"/>
+                    <SolidColorBrush x:Key="HeaderedBg" Color="#08ffffff"/>
+                    <SolidColorBrush x:Key="MainText" Color="#f5f5f7"/>
+                    <SolidColorBrush x:Key="SubText" Color="#86868b"/>
+                    <SolidColorBrush x:Key="OverlayBackground" Color="#cc121212"/>
+                    <SolidColorBrush x:Key="ModalBackground" Color="#1e1e1e"/>
+                    <SolidColorBrush x:Key="ModalBorder" Color="#35ffffff"/>
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Window.Styles>
+        <!-- Custom Styling to resemble macOS Sequoia UI -->
+        
+        <Style Selector="Border.fanCard">
+            <Setter Property="Background" Value="{DynamicResource CardBackground}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="12"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.15"/>
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.15"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border.fanCard:pointerover">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundHover}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderHover}"/>
+        </Style>
+        <Style Selector="Border.fanCardSelected">
+            <Setter Property="Background" Value="#0a007aff"/>
+            <Setter Property="BorderBrush" Value="#007aff"/>
+            <Setter Property="BorderThickness" Value="1.5"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="12"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+        </Style>
+        
+        <Style Selector="HeaderedContentControl">
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Background="{DynamicResource HeaderedBg}" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,16">
+                        <StackPanel>
+                            <TextBlock Text="{TemplateBinding Header}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource SubText}" LetterSpacing="0.8" Margin="0,0,0,12"/>
+                            <ContentPresenter Content="{TemplateBinding Content}"/>
+                        </StackPanel>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+    </Window.Styles>
+
+    <Grid>
+        <!-- Main background border layout with acrylic effect support -->
+        <Border ClipToBounds="True" Name="MainBorder">
+            <Border.Background>
+                <!-- Dynamic background with custom fallback for themes -->
+                <SolidColorBrush Color="#1E1E1F" Opacity="0.9"/>
+            </Border.Background>
+            <Grid ColumnDefinitions="320,*">
+                
+                <!-- ========================================== -->
+                <!-- LEFT SIDEBAR -->
+                <!-- ========================================== -->
+                <Border Grid.Column="0" BorderBrush="{DynamicResource CardBorder}" BorderThickness="0,0,1,0" Name="SidebarBorder">
+                    <Border.Background>
+                        <SolidColorBrush Color="#181819" Opacity="0.8"/>
+                    </Border.Background>
+                    <Grid RowDefinitions="Auto,*,Auto" Margin="20,20,20,16">
+                        
+                        <!-- Logo & Title Header -->
+                        <StackPanel Grid.Row="0" Margin="0,0,0,12">
+                            <Grid ColumnDefinitions="*,Auto,Auto">
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <Image Source="/Assets/logo.png" Width="20" Height="20" RenderOptions.BitmapInterpolationMode="HighQuality"/>
+                                    <TextBlock Text="PANKHA" FontSize="16" FontWeight="Black" Foreground="{DynamicResource MainText}" LetterSpacing="1.0" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <Border Grid.Column="1" Background="{DynamicResource CardBackground}" BorderBrush="#25ffffff" BorderThickness="1" CornerRadius="4" Padding="4,2" Margin="8,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="v2.1.1" FontSize="9" FontWeight="SemiBold" Foreground="#98989d"/>
+                                </Border>
+                                <TextBlock Grid.Column="2" Text="by itznan" FontSize="10" Foreground="{DynamicResource SubText}" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                            </Grid>
+                            <Border Height="1" Background="{DynamicResource CardBackground}" Margin="0,12,0,0"/>
+                        </StackPanel>
+                        
+                        <!-- Fan list cards scroll view -->
+                        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"
+                                      local:SmoothScroll.IsEnabled="True">
+                            <ItemsControl ItemsSource="{Binding Fans}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:FanViewModel">
+                                        <Grid>
+                                            <Border PointerPressed="FanCard_PointerPressed" Tag="{Binding}" Cursor="Hand" x:CompileBindings="False">
+                                                <!-- Selection style wrapper -->
+                                                <Panel>
+                                                    <Border Classes="fanCard" IsVisible="{Binding !IsSelected}">
+                                                        <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto">
+                                                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding Name}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource MainText}" TextTrimming="CharacterEllipsis"/>
+                                                            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding TempText}" FontSize="12" FontWeight="SemiBold" Foreground="#ff9f0a"/>
+                                                            
+                                                            <TextBlock Grid.Row="1" Grid.Column="0" Text="{Binding HardwareName}" FontSize="11" Foreground="{DynamicResource SubText}" Margin="0,4,0,0" TextTrimming="CharacterEllipsis"/>
+                                                            
+                                                            <TextBlock Grid.Row="2" Grid.Column="0" Text="{Binding RpmText}" FontSize="11" Foreground="#10b981" FontWeight="Medium" Margin="0,6,0,0"/>
+                                                            <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding DutyText}" FontSize="11" Foreground="{DynamicResource SubText}" Margin="0,6,0,0"/>
+                                                        </Grid>
+                                                    </Border>
+                                                    <Border Classes="fanCardSelected" IsVisible="{Binding IsSelected}">
+                                                        <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto">
+                                                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding Name}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource MainText}" TextTrimming="CharacterEllipsis"/>
+                                                            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding TempText}" FontSize="12" FontWeight="SemiBold" Foreground="#ff9f0a"/>
+                                                            
+                                                            <TextBlock Grid.Row="1" Grid.Column="0" Text="{Binding HardwareName}" FontSize="11" Foreground="{DynamicResource SubText}" Margin="0,4,0,0" TextTrimming="CharacterEllipsis"/>
+                                                            
+                                                            <TextBlock Grid.Row="2" Grid.Column="0" Text="{Binding RpmText}" FontSize="11" Foreground="#007aff" FontWeight="Medium" Margin="0,6,0,0"/>
+                                                            <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding DutyText}" FontSize="11" Foreground="{DynamicResource MainText}" Margin="0,6,0,0"/>
+                                                        </Grid>
+                                                    </Border>
+                                                </Panel>
+                                            </Border>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                        
+                        <!-- Left Footer Controls -->
+                        <Grid Grid.Row="2" ColumnDefinitions="*,Auto,Auto" Margin="0,8,0,0">
+                            <!-- Connection Status -->
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <Ellipse Width="8" Height="8" Fill="{Binding ConnectionStatusColor}"/>
+                                <TextBlock Text="{Binding ConnectionStatusText}" FontSize="11" Foreground="#98989d"/>
+                            </StackPanel>
+                            
+                            <!-- Settings Toggle -->
+                            <Button Grid.Column="1" Content="Settings" FontSize="11" Padding="8,4" CornerRadius="6" Background="{DynamicResource CardBackground}" Foreground="{DynamicResource MainText}" Command="{Binding ToggleSettingsCommand}" Margin="0,0,6,0" Cursor="Hand"/>
+                            <!-- Rescan Button -->
+                            <Button Grid.Column="2" Content="Rescan" FontSize="11" Padding="8,4" CornerRadius="6" Background="{DynamicResource CardBackground}" Foreground="{DynamicResource MainText}" Command="{Binding RescanCommand}" Cursor="Hand"/>
+                        </Grid>
+                        
+                    </Grid>
+                </Border>
+                
+                <!-- ========================================== -->
+                <!-- RIGHT DETAIL VIEW -->
+                <!-- ========================================== -->
+                <Grid Grid.Column="1" RowDefinitions="Auto,Auto,*,Auto">
+                    
+
+                    
+                    <!-- Motherboard driver warning banner -->
+                    <!-- Motherboard driver warning banner (Row 0 — own Auto row) -->
+                    <Border Grid.Row="0" IsVisible="{Binding ShowMotherboardWarning}"
+                            Background="#2D1F00" BorderBrush="#ff9f0a" BorderThickness="0,0,0,1"
+                            Padding="16,10">
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            <TextBlock Grid.Column="0" Text="⚠️" FontSize="14" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <TextBlock Grid.Column="1" Text="{Binding MotherboardWarningText}"
+                                       FontSize="11" Foreground="#ff9f0a" TextWrapping="Wrap"
+                                       VerticalAlignment="Center" LineHeight="16"/>
+                            <Button Grid.Column="2" Content="✕" FontSize="11" Padding="6,2"
+                                    Background="Transparent" Foreground="#ff9f0a"
+                                    CornerRadius="4" Margin="10,0,0,0"
+                                    VerticalAlignment="Center" Cursor="Hand"
+                                    Command="{Binding DismissMotherboardWarningCommand}"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Hardware-minimum warning banner (Row 1 — own Auto row) -->
+                    <Border Grid.Row="1" IsVisible="{Binding ShowHardwareMinWarning}"
+                            Background="#1A1A2E" BorderBrush="#5e5ce6" BorderThickness="0,0,0,1"
+                            Padding="16,10">
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            <TextBlock Grid.Column="0" Text="ℹ️" FontSize="14" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <TextBlock Grid.Column="1" Text="{Binding HardwareMinWarningText}"
+                                       FontSize="11" Foreground="#a78bfa" TextWrapping="Wrap"
+                                       VerticalAlignment="Center" LineHeight="16"/>
+                            <Button Grid.Column="2" Content="✕" FontSize="11" Padding="6,2"
+                                    Background="Transparent" Foreground="#a78bfa"
+                                    CornerRadius="4" Margin="10,0,0,0"
+                                    VerticalAlignment="Center" Cursor="Hand"
+                                    Command="{Binding DismissHardwareMinWarningCommand}"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Content Scrollable view -->
+                    <ScrollViewer Grid.Row="2" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Margin="28,24,28,0" IsVisible="{Binding HasSelectedFan}"
+                                  local:SmoothScroll.IsEnabled="True">
+                        <StackPanel Margin="0,0,0,24">
+                            
+                            <!-- Large Header details -->
+                            <TextBlock Text="{Binding SelectedFan.Name}" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource MainText}" Margin="0,0,0,4"/>
+                            <TextBlock Text="{Binding SelectedFan.HardwareName}" FontSize="12" Foreground="{DynamicResource SubText}" Margin="0,0,0,20"/>
+                            
+                            <!-- Telemetry Data Card -->
+                            <HeaderedContentControl Header="TELEMETRY">
+                                <StackPanel Spacing="16">
+                                    <Grid ColumnDefinitions="*,*,*">
+                                        <!-- Column 1: Speed -->
+                                        <StackPanel Grid.Column="0" Spacing="4">
+                                            <TextBlock Text="CURRENT SPEED" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource SubText}"/>
+                                            <TextBlock Text="{Binding SelectedFan.RpmText}" FontSize="20" FontWeight="Bold" Foreground="#10b981"/>
+                                        </StackPanel>
+                                        <!-- Column 2: Duty -->
+                                        <StackPanel Grid.Column="1" Spacing="4">
+                                            <TextBlock Text="DUTY CYCLE" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource SubText}"/>
+                                            <TextBlock Text="{Binding SelectedFan.DutyText}" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource MainText}"/>
+                                        </StackPanel>
+                                        <!-- Column 3: Temp -->
+                                        <StackPanel Grid.Column="2" Spacing="4">
+                                            <TextBlock Text="TEMPERATURE" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource SubText}"/>
+                                            <TextBlock Text="{Binding SelectedFan.TempText}" FontSize="20" FontWeight="Bold" Foreground="#ff9f0a"/>
+                                        </StackPanel>
+                                    </Grid>
+                                    
+                                    <!-- Duty progress representation -->
+                                    <ProgressBar Height="6" Maximum="100" Value="{Binding SelectedFan.Duty}" Foreground="#007aff" Background="{DynamicResource CardBackground}" CornerRadius="3"/>
+                                    
+                                    <!-- Live Telemetry Graph -->
+                                    <local:TelemetryChart RpmHistory="{Binding SelectedFan.RpmHistory}" TempHistory="{Binding SelectedFan.TempHistory}" Height="150" Margin="0,8,0,0"/>
+                                </StackPanel>
+                            </HeaderedContentControl>
+                            
+                            <!-- Control Configuration Panel -->
+                            <HeaderedContentControl Header="CONTROL CONFIGURATION" IsEnabled="{Binding IsControllable}">
+                                <StackPanel Spacing="16">
+                                    <!-- Mode selector -->
+                                    <StackPanel Spacing="6">
+                                        <TextBlock Text="CONTROL MODE" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource SubText}"/>
+                                        <ComboBox SelectedIndex="{Binding SelectedControlModeIndex}" HorizontalAlignment="Stretch" CornerRadius="6">
+                                            <ComboBoxItem Content="BIOS (Auto)"/>
+                                            <ComboBoxItem Content="Manual Override"/>
+                                        </ComboBox>
+                                    </StackPanel>
+                                    
+                                    <!-- Mode 1 Panel: Manual overrides -->
+                                    <StackPanel Spacing="12" IsVisible="{Binding IsManualMode}">
+                                        <TextBlock Text="TARGET SPEED" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource SubText}"/>
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <Slider Grid.Column="0" Minimum="0" Maximum="100" Value="{Binding TargetManualSpeed}" Foreground="#007aff" TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center" Margin="0,0,16,0"/>
+                                            <NumericUpDown Grid.Column="1" Minimum="0" Maximum="100" Value="{Binding TargetManualSpeed}" Width="100" FormatString="{}{0} %" CornerRadius="6" VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </StackPanel>
+                                    
+
+                                    
+                                </StackPanel>
+                            </HeaderedContentControl>
+                            
+                            <!-- Expander layout for Advanced Parameters -->
+                            <Expander Header="ADVANCED PARAMETERS" CornerRadius="8" Background="{DynamicResource HeaderedBg}" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1" Margin="0,0,0,16">
+                                <StackPanel Spacing="10" Margin="0,8,0,0">
+                                    <Grid ColumnDefinitions="140,*">
+                                        <TextBlock Grid.Column="0" Text="Hardware Path:" Foreground="{DynamicResource SubText}" VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="1" Text="{Binding AdvHardwarePath}" IsReadOnly="True" CornerRadius="6" Background="{DynamicResource CardBackground}"/>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="140,*">
+                                        <TextBlock Grid.Column="0" Text="Min RPM:" Foreground="{DynamicResource SubText}" VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="1" Text="{Binding AdvMinRpm}" IsReadOnly="True" CornerRadius="6" Background="{DynamicResource CardBackground}"/>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="140,*">
+                                        <TextBlock Grid.Column="0" Text="Max RPM:" Foreground="{DynamicResource SubText}" VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="1" Text="{Binding AdvMaxRpm}" IsReadOnly="True" CornerRadius="6" Background="{DynamicResource CardBackground}"/>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="140,*">
+                                        <TextBlock Grid.Column="0" Text="Control ID:" Foreground="{DynamicResource SubText}" VerticalAlignment="Center"/>
+                                        <TextBox Grid.Column="1" Text="{Binding AdvControlId}" IsReadOnly="True" CornerRadius="6" Background="{DynamicResource CardBackground}"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Expander>
+                            
+                            <!-- Action buttons -->
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="12">
+                                <Button Content="Calibrate Fan" Background="{DynamicResource CardBackground}" Foreground="{DynamicResource MainText}" CornerRadius="6" Padding="14,8" FontWeight="SemiBold" Command="{Binding StartCalibrationCommand}" Cursor="Hand"/>
+                                <Button Content="Save Manual Override" Background="#007aff" Foreground="White" CornerRadius="6" Padding="14,8" FontWeight="Bold" Command="{Binding ApplyManualOverrideCommand}" IsEnabled="{Binding IsManualMode}" Cursor="Hand"/>
+                            </StackPanel>
+                            
+                        </StackPanel>
+                    </ScrollViewer>
+                    
+                    <!-- Empty detail panel layout -->
+                    <Grid Grid.Row="2" VerticalAlignment="Center" HorizontalAlignment="Center" IsVisible="{Binding !HasSelectedFan}">
+                        <StackPanel Spacing="12">
+                            <TextBlock Text="🌀" FontSize="48" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Select a fan from the list&#x0a;to monitor and configure controls." FontSize="14" Foreground="{DynamicResource SubText}" TextAlignment="Center" LineHeight="20"/>
+                        </StackPanel>
+                    </Grid>
+                    
+                    <!-- Status Bar Footer -->
+                    <Border Grid.Row="3" Height="26" BorderBrush="{DynamicResource CardBorder}" BorderThickness="0,1,0,0" Padding="12,0" Background="#08181819">
+                        <Grid ColumnDefinitions="*,*">
+                            <TextBlock Grid.Column="0" Text="{Binding StatusBarLeftText}" FontSize="11" Foreground="{DynamicResource SubText}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                       ToolTip.Tip="{Binding StatusBarLeftText}"/>
+                            <TextBlock Grid.Column="1" Text="{Binding StatusBarRightText}" FontSize="11" Foreground="{DynamicResource SubText}" HorizontalAlignment="Right" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                       ToolTip.Tip="{Binding StatusBarRightText}"/>
+                        </Grid>
+                    </Border>
+                    
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!-- ========================================== -->
+        <!-- SETTINGS PANEL OVERLAY -->
+        <!-- ========================================== -->
+        <Border Background="{DynamicResource OverlayBackground}" CornerRadius="12" IsVisible="{Binding IsSettingsOpen}">
+            <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Border Width="380" Background="{DynamicResource ModalBackground}" BorderBrush="{DynamicResource ModalBorder}" BorderThickness="1" CornerRadius="10" Padding="20">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="Global Settings" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource MainText}" Margin="0,0,0,8"/>
+                        
+
+                        
+                        <!-- Poll interval -->
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="POLL INTERVAL" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource SubText}"/>
+                            <Grid ColumnDefinitions="*,Auto">
+                                <Slider Grid.Column="0" Minimum="500" Maximum="10000" Value="{Binding PollInterval}" LargeChange="500" SmallChange="100" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                <TextBlock Grid.Column="1" Text="{Binding PollInterval, StringFormat={}{0} ms}" Foreground="{DynamicResource MainText}" VerticalAlignment="Center" Width="60" TextAlignment="Right"/>
+                            </Grid>
+                        </StackPanel>
+                        
+                        <!-- Checkboxes -->
+                        <StackPanel Spacing="8" Margin="0,8,0,8">
+                            <CheckBox IsChecked="{Binding ShowRpmInStatusBar}" Content="Show RPM in Status Bar" CornerRadius="4"/>
+                            <CheckBox IsChecked="{Binding StartOnBoot}" Content="Start application on system boot" CornerRadius="4"/>
+                        </StackPanel>
+                        
+                        <!-- Close settings button -->
+                        <Button Content="Close &amp; Save" HorizontalAlignment="Right" Background="#007aff" Foreground="White" Padding="14,8" CornerRadius="6" FontWeight="Bold" Command="{Binding ToggleSettingsCommand}" Cursor="Hand"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- ========================================== -->
+        <!-- CALIBRATION PANEL OVERLAY -->
+        <!-- ========================================== -->
+        <Border Background="{DynamicResource OverlayBackground}" CornerRadius="12" IsVisible="{Binding IsCalibrating}">
+            <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+                
+                <!-- 1. Calibration progress display -->
+                <Border Width="460" Background="{DynamicResource ModalBackground}" BorderBrush="{DynamicResource ModalBorder}" BorderThickness="1" CornerRadius="10" Padding="24" IsVisible="{Binding !CalibrationShowResults}">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="Fan Calibration" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource MainText}"/>
+                        
+                        <TextBlock Text="{Binding CalibrationStatus}" FontSize="13" Foreground="#007aff" FontWeight="Medium"/>
+                        
+                        <Border Background="{DynamicResource HeaderedBg}" BorderBrush="{DynamicResource CardBorder}" BorderThickness="1" CornerRadius="6" Padding="12">
+                            <TextBlock Text="{Binding CalibrationTelemetry}" FontSize="13" FontWeight="Bold" FontFamily="Courier New" HorizontalAlignment="Center"/>
+                        </Border>
+                        
+                        <TextBlock Text="Safety Cutoff: 80.0°C (Monitored every 500ms)" FontSize="10" Foreground="#ff9f0a" HorizontalAlignment="Center" FontWeight="Medium"/>
+                        
+                        <ProgressBar Height="20" Minimum="0" Maximum="100" Value="{Binding CalibrationProgress}" ShowProgressText="True" CornerRadius="6" Foreground="#007aff" Background="{DynamicResource CardBackground}"/>
+                        
+                        <TextBlock Text="Warning: Calibration sweeps speed from 100% to 0% to test the speed curve. Do not run heavy workloads during calibration." TextWrapping="Wrap" FontSize="10" Foreground="{DynamicResource SubText}" LineHeight="14"/>
+                        
+                        <Button Content="Cancel Calibration" Background="#ff3b30" Foreground="White" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="10" CornerRadius="6" FontWeight="Bold" Command="{Binding CancelCalibrationCommand}" Cursor="Hand"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- 2. Calibration results display -->
+                <Border Width="500" Background="{DynamicResource ModalBackground}" BorderBrush="{DynamicResource ModalBorder}" BorderThickness="1" CornerRadius="10" Padding="24" IsVisible="{Binding CalibrationShowResults}">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="Calibration Results" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource MainText}"/>
+                        
+                        <TextBlock Text="{Binding CalibrationResultsMinMax}" FontSize="13" Foreground="#10b981" FontWeight="Bold" HorizontalAlignment="Center"/>
+                        
+                        <!-- Calibration points chart -->
+                        <local:CalibrationChart Points="{Binding CalibrationPoints}" Height="200" Margin="0,4,0,8"/>
+                        
+                        <Button Content="Done" Background="#007aff" Foreground="White" HorizontalAlignment="Right" Padding="16,8" CornerRadius="6" FontWeight="Bold" Command="{Binding CloseCalibrationResultsCommand}" Cursor="Hand"/>
+                    </StackPanel>
+                </Border>
+                
+            </Grid>
+        </Border>
+        
+    </Grid>
+</Window>

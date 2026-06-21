@@ -1,7 +1,0 @@
-// Manifest resource ID
-// 1 = CREATEPROCESS_MANIFEST_RESOURCE_ID
-// 24 = RT_MANIFEST
-1 24 "app.manifest"
-
-// Application icon (shown in Explorer, taskbar, alt-tab)
-1 ICON "icons/logo.ico"

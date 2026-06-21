@@ -2,7 +2,7 @@
 ; Defines how the single-file installer is compiled.
 
 #define MyAppName "pankha"
-#define MyAppVersion "1.0.1"
+#define MyAppVersion "2.1.1"
 #define MyAppPublisher "itznan"
 #define MyAppExeName "FanControlHost.exe"
 
@@ -17,7 +17,7 @@ DisableProgramGroupPage=yes
 PrivilegesRequired=admin
 OutputDir=.
 OutputBaseFilename=pankha_installer
-SetupIconFile=..\src\frontend\icons\logo.ico
+SetupIconFile=..\src\icons\logo.ico
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
@@ -31,7 +31,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "..\dist\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\dist\*"; DestDir: "{app}"; Excludes: "*.pdb"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Registry]
 Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers"; \

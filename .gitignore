@@ -1,109 +1,59 @@
-# High-quality .gitignore for a mixed C++/C# Windows project
-nul
-# ---------------------------------------------------------
-# General OS files
+# ─────────────────────────────────────────────────────────────────────────────
+# Pankha – .gitignore
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── OS ───────────────────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
-ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
-*.cab
-*.msi
-*.msix
-*.appx
 
-# Build directories
+# ── Local .NET SDK (downloaded by build.bat for machines without .NET 10) ────
+.dotnet/
+
+# ── Build output ─────────────────────────────────────────────────────────────
 bin/
 obj/
-build/
-Dist/
-Dist/**
-
 dist/
-installer/*
-!installer/setup.iss
-# Visual Studio / MSBuild
+
+# ── Installer binaries (compiled artifacts, not source) ──────────────────────
+installer/*.exe
+
+# ── .NET / MSBuild ────────────────────────────────────────────────────────────
 *.user
 *.suo
 *.sln.docstates
-*.vcxproj.user
-*.vcxproj.filters
-*.vcxproj
-*.vcproj
-*.dbmdl
-*.opendb
-*.opensdf
-*.vcxproj.*
-*.vcproj.*
-*.sdf
-*.ipch
-*.opensdf
-*.vcxproj.backup
-*.vcxproj~
-*.vspscc
-*.vssscc
-.vs/
-.vscode/
-# C# / .NET specific
-*.csproj.user
-*.csproj.nuget.g.props
-*.csproj.nuget.g.targets
-packages/
-.nuget/
 project.lock.json
 project.assets.json
 *.nupkg
 *.snk
-*.pdb
+
+# ── Compiled binaries ────────────────────────────────────────────────────────
 *.dll
 *.exe
+*.pdb
 *.app
-# Rider / JetBrains
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+
+# ── Node (not used – guard against accidental npm init) ──────────────────────
+node_modules/
+package-lock.json
+
+# ── IDE / Editor ─────────────────────────────────────────────────────────────
+.vs/
+.vscode/
 .idea/
 *.iml
 
-# Generated files
-*.log
-*.tmp
-*.cache
-*.obj
-*.pch
-*.ilk
-*.exp
-*.lib
-*.idb
-*.sbr
-*.tlb
-*.tlh
-*.tli
-*.obj
-*.o
-*.a
-*.so
-*.dylib
-
-# CMake files
-CMakeCache.txt
-CMakeFiles/
-CMakeScripts/
-CMakeTmp/
-cmake_install.cmake
-Makefile
-
-# Visual Studio Code settings
-.vscode/*
-
-# Other temporary files
+# ── Temporary / generated files ──────────────────────────────────────────────
 *.bak
-*.old
-*.orig
+*.tmp
 *.swp
 *.swo
-*.tmp
+*.orig
+*.cache
 
-# Documentation folder (local debug/info)
-docs/
-
-# End of .gitignore
-
+# ── Environment ──────────────────────────────────────────────────────────────
 .env

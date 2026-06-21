@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="src/frontend/images/logo.png" alt="Pankha Logo" width="100" />
+  <img src="src/Assets/logo.png" alt="Pankha Logo" width="100" />
 </p>
 
 <h1 align="center">Pankha</h1>
 
 <p align="center">
-  A premium, lightweight fan control application for Windows
+  <strong>A premium, lightweight, unified fan control application for Windows</strong>
 </p>
 
 <p align="center">
@@ -17,210 +17,171 @@
   </a>
   <img src="https://img.shields.io/badge/platform-Windows%2010%2F11-blue" alt="Platform" />
   <img src="https://img.shields.io/badge/architecture-x64-orange" alt="Architecture" />
+  <img src="https://img.shields.io/badge/framework-Avalonia%20UI-blueviolet" alt="Framework" />
   <img src="https://img.shields.io/github/license/itznan/pankha?color=gray" alt="License" />
 </p>
 
 <p align="center">
-  <em>Pankha (পাখা / पंखा) — Bengali/Hindi for "Fan"</em>
+  <em>Pankha (পাখা / पंখা) — Bengali/Hindi word for "Fan"</em>
 </p>
 
 ---
 
-## Features
+## ✨ Features
 
 | Feature | Description |
 |---|---|
-| **Premium UI** | macOS Sequoia-inspired Light & Dark themes with glassmorphism, smooth animations, and clean typography |
-| **Manual Fan Control** | Override any CPU, GPU, or motherboard fan channel with a target speed from 0% to 100% |
-| **Persistent Speeds** | Manually set speeds remain active on hardware even after the app closes |
-| **System Tray** | Minimize to tray for unobtrusive background operation. Double-click to restore |
-| **Start on Boot** | Launch silently in the system tray when Windows starts |
-| **Live Monitoring** | Real-time RPM readings, duty cycle percentages, and configurable poll intervals |
-| **Native x64** | Both C++ and C# compile to native 64-bit binaries — no emulation layers |
-| **Single Installer** | One-click Inno Setup installer bundles everything |
+| 🎨 **macOS-Inspired UI** | Sequoia-inspired Light & Dark modes featuring beautiful curves, modern typography, glassmorphism effects, and smooth animations |
+| 🌀 **Granular Fan Control** | Take control of motherboard, CPU, and GPU fan channels with custom speeds (0% – 100%) or restore automatic hardware curve control |
+| ⚡ **Zero-Latency Monitoring** | Live updates of RPM levels, control percentages, and multiple sensor temperatures (CPU, GPU, and motherboard) |
+| ⚙️ **Automatic Driver Setup** | Seamless detection and background installation of the required **PawnIO kernel driver** if missing on start |
+| 📉 **Interactive Charts** | Smooth, high-fidelity real-time telemetry graphs showing sensor readouts and calibration metrics |
+| 🔽 **Minimize-to-Tray** | Runs unobtrusively in the Windows system tray. Double-click the tray icon to bring it back to focus |
+| 🚀 **Start on Boot** | Optional registry configuration to launch silently in the system tray when Windows boots up |
+| 💾 **Settings Persistence** | Saves all window preferences, poll interval, theme options, and custom startup behaviors to the registry |
+| 📦 **Portable & Installable** | Compile to a single self-contained executable, or package with Inno Setup into a clean one-click installer |
 
 ---
 
-## Architecture
+## 🏛️ Architecture
+
+Pankha has been completely rewritten into a **single-process native .NET 10.0 C# Desktop Application** built on **Avalonia UI**. This removes all intermediate HTTP server overhead and process synchronization issues, delivering high performance and low resource consumption.
 
 ```
-┌─────────────────────────────┐     HTTP (localhost:5555)     ┌──────────────────────────────┐
-│                             │  ◄──── JSON requests ────►   │                              │
-│    Qt C++ Frontend (UI)     │                               │    C# .NET 8.0 Backend       │
-│                             │   GET  /fans                  │                              │
-│  • MainWindow               │   POST /controls/{id}         │  • LibreHardwareMonitorLib   │
-│  • FanCardWidget            │   POST /controls/{id}/auto    │  • HttpListener              │
-│  • FanApiClient             │                               │  • FanController             │
-│  • BackendLauncher          │                               │                              │
-│                             │                               │  Requires: Administrator     │
-└─────────────────────────────┘                               └──────────────────────────────┘
+┌──────────────────────────────────────────┐
+│            Pankha (Avalonia UI)          │
+│   - Modern Views & Charts (XAML)         │
+│   - ViewModels & Application Logic       │
+└─────────────────────┬────────────────────┘
+                      │ Direct Call
+                      ▼
+┌──────────────────────────────────────────┐
+│        LibreHardwareMonitorLib           │
+└─────────────────────┬────────────────────┘
+                      │ Driver API
+                      ▼
+┌──────────────────────────────────────────┐
+│         PawnIO Kernel Driver             │
+│      (Low-Level Hardware Access)         │
+└─────────────────────┬────────────────────┘
+                      │ Read / Write
+                      ▼
+┌──────────────────────────────────────────┐
+│    Hardware Sensors & Fan Controllers    │
+│         (Motherboard, CPU, GPU)          │
+└──────────────────────────────────────────┘
 ```
 
-1. The **Qt C++ frontend** launches `FanControlBackend.exe` as a child process
-2. The **C# backend** initializes LibreHardwareMonitor (requires Admin) and starts an HTTP server on port `5555`
-3. The frontend polls the backend via JSON to display live sensor data and send control commands
-4. Stdin monitoring ensures the backend exits cleanly when the frontend closes
+1. **Avalonia UI Presentation**: Code-behind, styles, custom telemetry charts, and VM properties run in a single process.
+2. **Telemetry Service**: Direct C# bindings call `LibreHardwareMonitorLib`.
+3. **PawnIO Kernel Driver**: Windows requires low-level kernel driver registration (`PawnIO`) to poll motherboard controllers and Super I/O chips safely. Pankha automatically installs it if not present.
+4. **Elevation Requirement**: Because kernel driver interactions require administrator rights, the application manifest requests UAC elevation.
 
 ---
 
-## Project Structure
+## 📁 Repository Structure
 
 ```
 pankha/
-├── src/
-│   ├── backend/                    # C# .NET 8.0 Backend
-│   │   ├── Program.cs              # HTTP server & request routing
-│   │   ├── FanController.cs        # LibreHardwareMonitor interface
-│   │   ├── FanControlApp.csproj    # Project configuration
-│   │   └── app.manifest            # Administrator privilege manifest
+├── src/                            # C# .NET 10.0 Source Code
+│   ├── App.axaml                   # Application initialization markup
+│   ├── App.axaml.cs                # Checks PawnIO driver prerequisite & starts windows
+│   ├── Program.cs                  # Classic desktop lifetime launcher
+│   ├── app.manifest                # UAC Administrator execution manifest
+│   ├── pankha.csproj               # Project dependencies and MSBuild instructions
 │   │
-│   └── frontend/                   # Qt 6 C++ Frontend
-│       ├── MainWindow.h            # Main window header
-│       ├── MainWindow.cpp          # Window lifecycle & events
-│       ├── MainWindow_UI.cpp       # UI layout & widget setup
-│       ├── MainWindow_Slots.cpp    # Signal/slot handlers
-│       ├── MainWindow_Settings.cpp # Settings persistence
-│       ├── FanApiClient.h/.cpp     # HTTP client for backend API
-│       ├── BackendLauncher.h/.cpp  # Backend process manager
-│       ├── main.cpp                # Application entry point
-│       ├── components/
-│       │   ├── FanCardWidget.h/.cpp
-│       │   └── SmoothScrollFilter.h/.cpp
-│       ├── styles_dark.qss
-│       ├── styles_light.qss
-│       ├── resources.qrc
-│       ├── resource.rc
-│       ├── icons/
-│       └── images/
+│   ├── Assets/                     # Application icons and PNG logo assets
+│   ├── icons/                      # Windows compiler executable icon
+│   │
+│   ├── Components/                 # Custom graphic controls
+│   │   ├── CalibrationChart.cs     # Interactive fan curve calibration graph
+│   │   ├── TelemetryChart.cs       # Real-time visual monitoring charts
+│   │   └── SmoothScroll.cs         # Smooth, physics-based inertial scrolling
+│   │
+│   ├── Services/                   # Hardware APIs & configurations
+│   │   ├── FanController.cs        # Integrates LibreHardwareMonitor with CPU/GPU/Motherboard
+│   │   ├── PawnIOChecker.cs        # Automatic downloader & silent installer for PawnIO driver
+│   │   └── RegistrySettingsManager.cs # Configures app preferences & Start-on-Boot registry keys
+│   │
+│   ├── ViewModels/                 # MVVM bindings
+│   │   ├── MainWindowViewModel.cs  # Directs settings, timer polling, & sensor telemetry
+│   │   ├── FanViewModel.cs         # Single-fan interactive logic, modes, & calibration
+│   │   └── ViewModelBase.cs        # INotifyPropertyChanged base definition
+│   │
+│   └── Views/                      # XAML User Interfaces
+│       ├── MainWindow.axaml        # Core window, sidebar, and fan lists layout
+│       └── PawnIOInstallWindow.axaml# Custom prompt for the PawnIO driver dependency
 │
 ├── installer/
-│   └── setup.iss                   # Inno Setup 6 installer script
+│   └── setup.iss                   # Inno Setup 6 script to compile the Windows installer
 │
 ├── .github/workflows/
-│   └── release.yml                 # CI/CD: build, package & release
+│   └── release.yml                 # CI/CD: build, package, and release installer on tags
 │
-└── CMakeLists.txt
+└── build.bat                       # Automated build, publish & installer packaging script
 ```
 
 ---
 
-## Build Instructions
+## 🔧 Build & Run Instructions
 
 ### Prerequisites
 
-| Tool | Version | Purpose |
+* **.NET 10.0 SDK** (Installed globally or downloaded locally via `build.bat`)
+* **Inno Setup 6** (Optional, to package the application installer)
+
+### Quick Build with automated script
+
+Run the included build script. It automatically ensures the correct SDK version is available, compiles the project self-contained, deploys it to a `dist/` directory, and compiles the installer:
+
+```powershell
+.\build.bat
+```
+
+### Manual CLI Publish
+
+To manually publish a standalone execution bundle without `build.bat`:
+
+```powershell
+dotnet publish src/pankha.csproj -c Release -r win-x64 --self-contained true
+```
+
+The output executables, assemblies, and DLLs will be produced inside:
+`src/bin/Release/net10.0-windows/win-x64/publish/`
+
+---
+
+## ⚙️ Configuration & Registry Settings
+
+Pankha avoids configuration files on disk, storing user choices directly inside the **Windows Registry**:
+
+| Key Path | Entry Name | Description |
 |---|---|---|
-| .NET SDK | 8.0+ | Build the C# backend |
-| MSYS2 (Clang64) | Latest | C++ compiler toolchain |
-| CMake | 3.16+ | Build system generator |
-| Ninja | Latest | Build backend for CMake |
-| Qt 6 | 6.x | UI framework (via MSYS2) |
-| Inno Setup 6 | Optional | Compile the installer |
-
-### Install MSYS2 Packages
-
-```bash
-pacman -S mingw-w64-clang-x86_64-clang \
-          mingw-w64-clang-x86_64-lld \
-          mingw-w64-clang-x86_64-cmake \
-          mingw-w64-clang-x86_64-ninja \
-          mingw-w64-clang-x86_64-qt6-base \
-          mingw-w64-clang-x86_64-qt6-svg
-```
-
-### Step-by-Step Build
-
-**1. Build the C# Backend**
-```powershell
-dotnet publish src/backend/FanControlApp.csproj -c Release -r win-x64 --self-contained true
-```
-
-**2. Build the Qt C++ Frontend**
-```powershell
-cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Release `
-  -DCMAKE_PREFIX_PATH=C:/msys64/clang64 `
-  -DCMAKE_C_COMPILER=C:/msys64/clang64/bin/clang.exe `
-  -DCMAKE_CXX_COMPILER=C:/msys64/clang64/bin/clang++.exe
-
-cmake --build build --config Release
-```
-
-**3. Deploy Dependencies**
-```powershell
-New-Item -ItemType Directory -Path "dist" -Force
-Copy-Item "build\FanControlHost.exe" -Destination "dist\" -Force
-Copy-Item "src\backend\bin\Release\net8.0\win-x64\publish\*" -Destination "dist\" -Force
-C:\msys64\clang64\bin\windeployqt.exe --release --no-translations --compiler-runtime dist\FanControlHost.exe
-```
-
-**4. Build Installer** *(optional)*
-```powershell
-& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\setup.iss
-```
-
-Output: `installer/pankha_installer.exe`
+| `HKCU\Software\itznan\Pankha` | `Theme` | `Light` or `Dark` UI appearance |
+| `HKCU\Software\itznan\Pankha` | `PollInterval` | Timing frequency for hardware readouts (in milliseconds) |
+| `HKCU\Software\itznan\Pankha` | `MinToTray` | True/False setting for minimizing window to notification tray |
+| `HKCU\Software\itznan\Pankha` | `StartOnBoot` | True/False setting for starting automatically |
+| `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` | `Pankha` | Shortcut launch command triggering silent boot starts |
 
 ---
 
-## CI/CD
+## 🤝 Contributing
 
-Every push to `main` triggers a GitHub Actions workflow that:
+We welcome contributions to make Pankha better! 
 
-1. Builds the C# backend (self-contained, x64)
-2. Builds the Qt C++ frontend (MSYS2 Clang64)
-3. Deploys all runtime dependencies
-4. Compiles the Inno Setup installer
-5. Uploads the installer as a build artifact
-6. Creates a GitHub Release with the installer attached
-
-See [`.github/workflows/release.yml`](.github/workflows/release.yml) for the full pipeline.
+1. **Fork** the repository
+2. **Create** a branch: `git checkout -b feature/awesome-feature`
+3. **Commit** your modifications: `git commit -m "feat: add beautiful telemetry curves"`
+4. **Push** to the origin: `git push origin feature/awesome-feature`
+5. **Open** a Pull Request
 
 ---
 
-## Configuration
+## 📄 License
 
-Settings are stored in the Windows Registry:
-
-| Key | Location |
-|---|---|
-| App preferences | `HKCU\Software\itznan\Pankha` |
-| Start on boot | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run\PankhaFanControl` |
-
-Settings include: theme selection, poll interval, minimize-to-tray behavior, and start-on-boot toggle.
+This project is open-source. For licensing details, please refer to the repository's license.
 
 ---
-
-## API Reference
-
-The C# backend exposes a local REST API on `http://localhost:5555`:
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/fans` | List all detected fan sensors with RPM, duty %, and control IDs |
-| `GET` | `/controls` | List all controllable fan channels |
-| `POST` | `/controls/{id}` | Set manual speed: `{ "mode": "manual", "speed": 50 }` |
-| `POST` | `/controls/{id}/auto` | Reset a fan channel to automatic BIOS control |
-
----
-
-## Contributing
-
-Contributions are welcome. To get started:
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/my-feature`
-3. Commit your changes: `git commit -m "feat: add my feature"`
-4. Push to the branch: `git push origin feature/my-feature`
-5. Open a Pull Request
-
----
-
-## License
-
-MIT License. See [LICENSE](LICENSE) for details.
-
----
-
 <p align="center">
-  Made with care by <a href="https://github.com/itznan">itznan</a>
+  Made with ❤️ by <a href="https://github.com/itznan">itznan</a>
 </p>
