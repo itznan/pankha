@@ -13,6 +13,8 @@
     <Version>2.1.1</Version>
     <AssemblyVersion>2.1.1.0</AssemblyVersion>
     <FileVersion>2.1.1.0</FileVersion>
+    <Company>itznan</Company>
+    <Authors>itznan</Authors>
   </PropertyGroup>
 
   <ItemGroup>
