@@ -31,23 +31,23 @@
 
 ---
 
-## ✨ Features
+## Features
 
 | Feature | Description |
 |---|---|
-| 🎨 **macOS-Inspired UI** | Sequoia-inspired Light & Dark modes featuring beautiful curves, modern typography, glassmorphism effects, and smooth animations |
-| 🌀 **Granular Fan Control** | Take control of motherboard, CPU, and GPU fan channels with custom speeds (0% – 100%) or restore automatic hardware curve control |
-| ⚡ **Zero-Latency Monitoring** | Live updates of RPM levels, control percentages, and multiple sensor temperatures (CPU, GPU, and motherboard) |
-| ⚙️ **Automatic Driver Setup** | Seamless detection and background installation of the required **PawnIO kernel driver** if missing on start |
-| 📉 **Interactive Charts** | Smooth, high-fidelity real-time telemetry graphs showing sensor readouts and calibration metrics |
-| 🔽 **Minimize-to-Tray** | Runs unobtrusively in the Windows system tray. Double-click the tray icon to bring it back to focus |
-| 🚀 **Start on Boot** | Optional registry configuration to launch silently in the system tray when Windows boots up |
-| 💾 **Settings Persistence** | Saves all window preferences, poll interval, theme options, and custom startup behaviors to the registry |
-| 📦 **Portable & Installable** | Compile to a single self-contained executable, or package with Inno Setup into a clean one-click installer |
+| **macOS-Inspired UI** | Sequoia-inspired Light & Dark modes featuring beautiful curves, modern typography, glassmorphism effects, and smooth animations |
+| **Granular Fan Control** | Take control of motherboard, CPU, and GPU fan channels with custom speeds (0% – 100%) or restore automatic hardware curve control |
+| **Zero-Latency Monitoring** | Live updates of RPM levels, control percentages, and multiple sensor temperatures (CPU, GPU, and motherboard) |
+| **Automatic Driver Setup** | Seamless detection and background installation of the required **PawnIO kernel driver** if missing on start |
+| **Interactive Charts** | Smooth, high-fidelity real-time telemetry graphs showing sensor readouts and calibration metrics |
+| **Minimize-to-Tray** | Runs unobtrusively in the Windows system tray. Double-click the tray icon to bring it back to focus |
+| **Start on Boot** | Optional registry configuration to launch silently in the system tray when Windows boots up |
+| **Settings Persistence** | Saves all window preferences, poll interval, theme options, and custom startup behaviors to the registry |
+| **Portable & Installable** | Compile to a single self-contained executable, or package with Inno Setup into a clean one-click installer |
 
 ---
 
-## 🏛️ Architecture
+## Architecture
 
 Pankha has been completely rewritten into a **single-process native .NET 10.0 C# Desktop Application** built on **Avalonia UI**. This removes all intermediate HTTP server overhead and process synchronization issues, delivering high performance and low resource consumption.
 
@@ -83,7 +83,7 @@ Pankha has been completely rewritten into a **single-process native .NET 10.0 C#
 
 ---
 
-## 📁 Repository Structure
+## Repository Structure
 
 ```
 pankha/
@@ -127,7 +127,7 @@ pankha/
 
 ---
 
-## 🔧 Build & Run Instructions
+## Build & Run Instructions
 
 ### Prerequisites
 
@@ -155,7 +155,7 @@ The output executables, assemblies, and DLLs will be produced inside:
 
 ---
 
-## ⚙️ Configuration & Registry Settings
+## Configuration & Registry Settings
 
 Pankha avoids configuration files on disk, storing user choices directly inside the **Windows Registry**:
 
@@ -169,7 +169,7 @@ Pankha avoids configuration files on disk, storing user choices directly inside 
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions to make Pankha better! 
 
@@ -181,11 +181,11 @@ We welcome contributions to make Pankha better!
 
 ---
 
-## 📄 License
+## License
 
 This project is open-source. For licensing details, please refer to the repository's license.
 
 ---
 <p align="center">
-  Made with ❤️ by <a href="https://github.com/itznan">itznan</a>
+  Made by <a href="https://github.com/itznan">itznan</a>
 </p>
